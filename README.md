@@ -7,7 +7,7 @@ https://github.com/ices-publications/SONAR-netCDF4
 
 
 ## Python representation of the 
-A python variable structure for annotations (based on dict?) that is a one to one mapping with the ICES Netcdf4 format is needed. The representation should follow the recommen
+A python variable structure for annotations (based on dict?) that is a one to one mapping with the ICES Netcdf4 format is needed. 
 
 ## Functions
 ### Readers:
@@ -30,6 +30,10 @@ The code and snippets below are the starting point for the development, in addit
 This is Gavins suggested annotation format, see the CDL files inside for more details. Part of this process will be to refine this and interact with ICES to achieve that end:
 
 https://github.com/nilsolav/EchosounderNetCDF
+
+It is based on his review on how the different software implement the annotations:
+
+https://docs.google.com/document/d/1F5ub9-ElnGWgoFzOhwrNiAB6fZRhKI8Nw6FskMhzI0g/edit#heading=h.ihw2gdxqw9td
 
 
 ### Specific to the U-net implementation
