@@ -6,8 +6,10 @@ https://github.com/ices-publications/SONAR-netCDF4
 
 
 
-## Python representation of the 
-A python variable structure for annotations (based on dict?) that is a one to one mapping with the ICES Netcdf4 format is needed. 
+## Python representation of the data
+A python variable structure for annotations (based on dict?) that is a one to one mapping with the ICES Netcdf4 format is needed.
+
+Based on discussions 06.01.2021 we should probably plan for two different representations. One that is aligned with the data grid, and one that defines the edges of the box that is independent of the data grid. For the first the time vector of the data is needed.
 
 ## Functions
 ### Readers:
@@ -22,6 +24,41 @@ A python variable structure for annotations (based on dict?) that is a one to on
 - annotations_to_nc - Writes the ICES acoustic annotation format in necdf 
 - annotations_to_work - Writes the ICES acoustic annotation format in necdf 
 - annotations_to_zarr - Writes the ICES acoustic annotation format in zarr (resolution specific?)
+
+## Test data
+The test data are stored at two different places. It is recommended to first clone the annotation data.
+
+### Annotation data
+The annotations are found at
+https://github.com/nilsolav/LSSS-label-versioning
+and can be clones using
+
+`git clone https://github.com/nilsolav/LSSS-label-versioning`
+
+The repository contatins three different branches.
+
+#### The master branch
+The master branch contains the original work files (they also contain nc files for logistical resons; I need to commit them here in order to update the nc2work branch).
+
+`git checkout master`
+
+#### The schoolonly branch
+This branch contain the nc files with schools only, i.e. removing layers, erased regions and excluded pings.
+
+`git checkout schoolsonly`
+
+#### The nc2work branch
+This branch contain the nc files generated from the original work files and work files generated from the nc files.
+
+`git checkout nc2work`
+
+### Raw data
+
+The raw data is located under the OceanInsight azure storage. Contact nilsolav@hi.no to get access. The data is found under 
+
+`/oceaninsightscience/File Shares/hidata/LSSS-label-versioning/`
+
+And the data should be placed in the folder hiearchy from the cloned repository.
 
 ## Starting points:
 The code and snippets below are the starting point for the development, in addition to the discussion at the ICES publication page.
