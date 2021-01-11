@@ -12,10 +12,12 @@ import numpy as np
 import xmltodict
 from datetime import datetime
 from echolab2.instruments import EK60
-import os
 
 
-class work_to_annotations (object):
+
+
+
+class work_reader (object):
 
     """Class for read LSSS .work files to ices annotation class
     
@@ -53,54 +55,14 @@ class work_to_annotations (object):
 
 
 
-    def __init__(self,work_file='',raw_file=''):
+    def __init__(self,work_filename=''):
         
-        
-        
-        
-        
-        
-        def depthConverter(depth): 
-            depth = depth.split(' ')
-            for idx in range(len(depth)):
-                if idx>0: 
-                    depth[idx]=float(depth[idx-1])+float(depth[idx])
-                else: 
-                    depth[idx]=float(depth[idx])
-                
-            return(depth)
-    
-            
-            
-            
-            
-            
-        def UNIXtime_to_epoce(timestamp):
-            '''Helper function to convert time stamps in work file to epoc since 1601'''
-            return((datetime.fromtimestamp(timestamp) - datetime(1601, 1, 1)).total_seconds()*1e9)
-            
-            
-            
-            
-        #Fixing names of files
-#        filename = os.path.splitext(survey_path)[0]
-        raw_filename=raw_file
-        work_filename = work_file
-
-
-#        #make error if both the work and the raw file does not exist
-#        if not os.path.isfile(raw_filename) and not os.path.isfile(work_filename): 
-#            print('asdf')
-#            raise FileError('The file named '+ filename + 'does not have both a raw and a work file')
-            
-        
-        #Define a structure type
+        #Define a structure type that is used to output the data
         class structtype(): 
             pass
         
         
         #define outputs
-        #!!! only the mask and info will be avaliable later
         self.school = list()
         self.layer = structtype()
         self.exclude = structtype()
@@ -108,20 +70,6 @@ class work_to_annotations (object):
         self.info = structtype()  
         
         
-        self.exclude.start_time = list()
-        self.exclude.numOfPings = list()
-        self.exclude.end_time = list()
-        self.exclude.min_depth = list()
-        self.exclude.max_depth = list()
-        self.exclude.start_time_UNIX = list()
-        
-#        self.mask = structtype()
-#        self.mask.region_type = np.array([])
-#        self.mask.region_channels = np.array([])
-#        self.mask.min_depth = np.array([])
-#        self.mask.max_depth = np.array([])
-#        self.mask.start_time = np.array([])
-#        self.mask.end_time = np.array([])
         
         
         
@@ -139,27 +87,7 @@ class work_to_annotations (object):
                     
         #number of pings in file to info section
         self.info.numberOfPings = np.int(doc['regionInterpretation']['timeRange']['@numberOfPings'])
-        self.info.timeFirstPing = UNIXtime_to_epoce(float(doc['regionInterpretation']['timeRange']['@start']))
-        self.info.timeFirstPing_UNIX = float(doc['regionInterpretation']['timeRange']['@start'])
-            
-        
-        
-        
-        #read ping times from ek60 file
-        data = EK60.EK60()
-        data.read_raw(raw_filename)
-        ping_time = data.get_channel_data(frequencies=38000)[38000][0].ping_time
-        self.info.ping_time = [(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in ping_time]
-        self.info.channel_names = list(data.get_channel_data().keys())
-        
-        
-        
-        
-
-        #test file
-        if self.info.timeFirstPing!=self.info.ping_time[0]: 
-            print('wronge time between first ping in work and raw')
-        
+        self.info.timeFirstPing = float(doc['regionInterpretation']['timeRange']['@start'])
         
         
         
@@ -168,41 +96,28 @@ class work_to_annotations (object):
         ####################################################################
         if not not(doc['regionInterpretation']['exclusionRanges']):
             
+            self.exclude.start_time = list()
+            self.exclude.numOfPings = list()
+            
             #Check if there is more than one and fill inn data
             if len(doc['regionInterpretation']['exclusionRanges'])==1:
                 timeRange = doc['regionInterpretation']['exclusionRanges']['timeRange']
-                start_time = UNIXtime_to_epoce(float(timeRange['@start']))
                 numOfPings = int(timeRange['@numberOfPings'])
-                end_time = self.info.ping_time[self.info.ping_time.index(start_time)+int(timeRange['@numberOfPings'])-1]
-                min_depth = 0
-                max_depth = 9999
-                start_time_UNIX = float(timeRange['@start'])
+                start_time = float(timeRange['@start'])
                 
                 self.exclude.start_time = np.hstack((self.exclude.start_time,start_time))
                 self.exclude.numOfPings = np.hstack((self.exclude.numOfPings,numOfPings))
-                self.exclude.end_time = np.hstack((self.exclude.end_time,end_time))
-                self.exclude.min_depth = np.hstack((self.exclude.min_depth,min_depth))
-                self.exclude.max_depth = np.hstack((self.exclude.max_depth,max_depth))
-                self.exclude.start_time_UNIX = np.hstack((self.exclude.start_time_UNIX,start_time_UNIX))
+#                self.exclude.start_time_UNIX = np.hstack((self.exclude.start_time_UNIX,start_time_UNIX))
                 
                 
             else:
                 #exclusionRanges
                 for timeRange in doc['regionInterpretation']['exclusionRanges']['timeRange']: 
-                    start_time = UNIXtime_to_epoce(float(timeRange['@start']))
-                    end_time = self.info.ping_time[self.info.ping_time.index(start_time)+int(timeRange['@numberOfPings'])-1]
                     numOfPings = int(timeRange['@numberOfPings'])
-                    end_time = self.info.ping_time[self.info.ping_time.index(start_time)+int(timeRange['@numberOfPings'])-1]
-                    min_depth = 0
-                    max_depth = 9999
-                    start_time_UNIX = float(timeRange['@start'])
+                    start_time = float(timeRange['@start'])
                     
                     self.exclude.start_time = np.hstack((self.exclude.start_time,start_time))
                     self.exclude.numOfPings = np.hstack((self.exclude.numOfPings,numOfPings))
-                    self.exclude.end_time = np.hstack((self.exclude.end_time,end_time))
-                    self.exclude.min_depth = np.hstack((self.exclude.end_min_depthtime,min_depth))
-                    self.exclude.max_depth = np.hstack((self.exclude.max_depth,max_depth))
-                    self.exclude.start_time_UNIX = np.hstack((self.start_time_UNIX.end_time,start_time_UNIX))
         
         
         
@@ -588,36 +503,206 @@ class work_to_annotations (object):
                         
                         
                     self.layer[i].boundaries = structtype()
-                    self.layer[i].boundaries.ID = list()
+                    self.layer[i].boundaries.ID =int(lay['@objectNumber'])
                     self.layer[i].boundaries.referenceTime = list()
-                    self.layer[i].boundaries.ping = list()
-                    self.layer[i].boundaries.depths = list()
-                    for bound in boundaries: 
-                        self.layer[i].boundaries.ID = np.hstack((self.layer[i].boundaries.ID,int(bound['@id'])))
                     
-                        for bbound in bound_keep: 
-                            if(bbound.id==int(bound['@id'])): 
-                                 self.layer[i].boundaries.referenceTime = np.hstack((self.layer[i].boundaries.referenceTime,bound_keep[i].referenceTime ))
-                                 self.layer[i].boundaries.ping = np.hstack((self.layer[i].boundaries.ping,np.arange(bound_keep[i].startPing ,bound_keep[i].startPing +bound_keep[i].numberOfPings)))
-                                 self.layer[i].boundaries.depths =np.hstack((self.layer[i].boundaries.ping, bound_keep[i].depths ))
+                    
+                    
+                    b_id = [b.id for b in bound_keep]
+                    for bound in boundaries: 
+                        
+                        idx = b_id.index(int(bound['@id']))
+                        self.layer[i].boundaries.ping = np.arange(bound_keep[idx].startPing ,bound_keep[idx].startPing +bound_keep[idx].numberOfPings)
+                        if bound['@isUpper']=='true': 
+                             self.layer[i].boundaries.depths_upper = bound_keep[idx].depths
+                        else:
+                             self.layer[i].boundaries.depths_lower = bound_keep[idx].depths
                                 
                     
                     i+=1
             
             
-        
-class ev_to_annotations (object):
-    """Class for read EcoView .ev files to ices annotation class"""
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
-    def __init__(self):
-        print('Function is not implemented')
+class work_to_annotation(object): 
+    
+    '''
+    class to convert work object to annotation
+    '''
+    
+    def __init__(self,work,raw_filename = ''): 
         
         
         
-class icesnc_to_annotations (object):
-    """Class for read ices .nc files to ices annotation class"""
+        #Define a structure type that is used to output the data
+        class structtype(): 
+            pass
+        
+        
+        def depthConverter(depth): 
+            depth = depth.split(' ')
+            for idx in range(len(depth)):
+                if idx>0: 
+                    depth[idx]=float(depth[idx-1])+float(depth[idx])
+                else: 
+                    depth[idx]=float(depth[idx])
+                
+            return(depth)
+    
+            
+            
+            
+            
+            
+        def UNIXtime_to_epoce(timestamp):
+            '''Helper function to convert time stamps in work file to epoc since 1601'''
+            return((datetime.fromtimestamp(timestamp) - datetime(1601, 1, 1)).total_seconds()*1e9)
+            
+            
+            
+            
+        data = EK60.EK60()
+        data.read_raw(raw_filename)
+        ping_time = data.get_channel_data(frequencies=38000)[38000][0].ping_time
+        
+        
+        
+        
+        
+        
+        ####################################################################
+        #Info secion
+        ####################################################################
+        self.info = structtype()
+        self.info.numberOfPings=work.info.numberOfPings
+        self.info.timeFirstPing=UNIXtime_to_epoce(work.info.timeFirstPing)
+        self.info.ping_time = np.array([(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in ping_time])
+        self.info.channel_names = list(data.get_channel_data().keys())
+        
+        
+        
+        
+        ####################################################################
+        #Define the maskoutput
+        ####################################################################
+        self.mask = list()
+        
+        
+        
+        ####################################################################
+        #Add excluded region
+        ####################################################################
+        for i in range(len(work.exclude.start_time)): 
+            self.mask.append(1)
+            mask_i = len(self.mask)-1
+            self.mask[mask_i] = structtype()
+            self.mask[mask_i].region_id = list()
+            self.mask[mask_i].region_name = list()
+            self.mask[mask_i].region_provenance= 'LSSS'
+            self.mask[mask_i].region_type= 'nodata'
+            self.mask[mask_i].region_channels= list(np.arange(len(self.info.channel_names))+1)
+            self.mask[mask_i].regions= list()
+            self.mask[mask_i].start_time= UNIXtime_to_epoce(work.exclude.start_time[i])
+            self.mask[mask_i].end_time = self.info.ping_time[np.int(np.where(self.mask[mask_i].start_time==self.info.ping_time)[0])+int(work.exclude.numOfPings[i])-1]
+            self.mask[mask_i].mask_times = self.info.ping_time[((self.info.ping_time>=self.mask[mask_i].start_time) & (self.info.ping_time<=self.mask[mask_i].end_time))]
+            self.mask[mask_i].max_depth = 9999
+            self.mask[mask_i].min_depth = 0
+            self.mask[mask_i].mask_depth = [[self.mask[mask_i].min_depth,self.mask[mask_i].max_depth] for x in range(len(self.mask[mask_i].mask_times))]
+            self.mask[mask_i].priority = 1
 
-    def __init__(self):
-        print('Function is not implemented')
+
+
+
+        ####################################################################
+        #Add erased region
+        ####################################################################
+        for i in range(len(work.erased.masks)):
+            self.mask.append(1)
+            mask_i = len(self.mask)-1
+            self.mask[mask_i] = structtype()
+            self.mask[mask_i].region_id = list()
+            self.mask[mask_i].region_name = list()
+            self.mask[mask_i].region_provenance= 'LSSS'
+            self.mask[mask_i].region_type= 'nodata'
+            self.mask[mask_i].regions= list()
+            self.mask[mask_i].region_channels=work.erased.masks[i].channelID 
+            self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
+            self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
+            self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
+            self.mask[mask_i].mask_depth = [depthConverter(d) for d in work.erased.masks[i].depth]
+            self.mask[mask_i].min_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
+            self.mask[mask_i].max_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
+            self.mask[mask_i].priority = 1
+                    
+            
+            
+            
         
-        
+        ####################################################################
+        #Add school mask
+        ####################################################################
+        for i in range(len(work.school)): 
+            self.mask.append(1)
+            mask_i = len(self.mask)-1
+            self.mask[mask_i] = structtype()
+            self.mask[mask_i].region_id = list()
+            self.mask[mask_i].region_name = list()
+            self.mask[mask_i].region_provenance= 'LSSS'
+            self.mask[mask_i].region_type= 'analysis'
+            self.mask[mask_i].regions= list()
+            self.mask[mask_i].region_id = work.school[i].objectNumber
+            self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.school[i].relativePingNumber]
+            self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
+            self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
+            self.mask[mask_i].min_depth = min(work.school[i].min_depth )
+            self.mask[mask_i].max_depth = max(work.school[i].max_depth)
+            self.mask[mask_i].mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
+#            
+            if type(work.school[i].interpretations) == list:
+                self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(ip)+1 for f in work.school[i].interpretations for ip in list(data.get_channel_data().keys()) if f.frequency in ip]
+                self.mask[mask_i].region_category_ids = [c.species_id for c in work.school[i].interpretations]
+                self.mask[mask_i].region_category_names = [c.species_id for c in work.school[i].interpretations]
+                self.mask[mask_i].region_category_proportions = [c.fraction for c in work.school[i].interpretations]
+            else: 
+                self.mask[mask_i].region_category_ids=work.school[i].interpretations.species_id
+                self.mask[mask_i].region_category_names = work.school[i].interpretations.species_id
+                self.mask[mask_i].region_category_proportions = work.school[i].interpretations.fraction
+                self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(ip)+1 for ip in list(data.get_channel_data().keys()) if work.school[i].interpretations.frequency in ip]
+            self.mask[mask_i].priority = 2
+            
+        ####################################################################
+        #Add layer mask
+        ####################################################################
+        for i in range(len(work.layer)):
+            self.mask.append(1)
+            mask_i = len(self.mask)-1
+            self.mask[mask_i] = structtype()
+            self.mask[mask_i].region_id = list()
+            self.mask[mask_i].region_name = list()
+            self.mask[mask_i].region_provenance= 'LSSS'
+            self.mask[mask_i].region_type= 'analysis'
+            self.mask[mask_i].regions= list()
+#            self.mask[mask_i].region_id = work.school[i].objectNumber
+            self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+            self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
+            self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
+            self.mask[mask_i].min_depth = min(work.layer[i].boundaries.depths_upper)
+            self.mask[mask_i].max_depth = max(work.layer[i].boundaries.depths_lower)
+            self.mask[mask_i].mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
+            self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(i)+1 for f in work.layer[i].interpretation for i in list(data.get_channel_data().keys()) if f.frequency in i]
+            self.mask[mask_i].region_category_ids = [c.species_id for c in work.layer[i].interpretation]
+            self.mask[mask_i].region_category_names = [c.species_id for c in work.layer[i].interpretation]
+            self.mask[mask_i].region_category_proportions = [c.fraction for c in work.layer[i].interpretation]
+#            self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(ip)  for i.p in list(data.get_channel_data().keys()) if work.layer[i].interpretation.frequency in ip]
+                
+            self.mask[mask_i].priority = 3
