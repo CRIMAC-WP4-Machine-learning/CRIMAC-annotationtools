@@ -2,5 +2,4 @@
 Include code to unpack manufacturer-specific data files into an interoperable netCDF format.
 """
 
-from .convert_to_annotations import work_reader
-from .convert_to_annotations import work_to_annotation
+from .annotation_to_work import annotation_to_work
