@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 17 11:18:25 2020
-
-@author: sindrev
-"""
-
 
 
 #Load som packages
@@ -19,34 +13,115 @@ from echolab2.instruments import EK60
 
 class work_reader (object):
 
-    """Class for read LSSS .work files to ices annotation class
+    """Function for reading the LSSS .work files including the interpretation 
+    masks linked to ecousounder files
+    
+    Author: 
+        Sindre Vatnehol
+        Institue of Marine Research
+        mail: sindre.vatnehol@hi.no
     
     
-    datastructure: 
+    Input: 
+        work_filename:  file name or file path of a .work file
         
-    #school info
-        school                               - list containing innformation of each school
-        school[i].referenceTime
-        school[i].objectNumber 
-        school[i].relativePingNumber         -
-        school[i].min_depth
-        school[i].max_depth
-        school[i].interpretation
-        school[i].interpretations[ii].frequency 
-        school[i].interpretations[ii].species_id 
-        school[i].interpretations[ii].fraction
-        
-        
-    #erased mask info
-        erased                               -a datastructure including information of the errased mask
-        erase.masks                          -a list containing the mask per frequency
-        erased.masks[i].channelID            -channelID
-        erased.masks[i].pingOffset           -list of ping number
-        erased.masks[i].depth                -list of depth intervalls
-        
-    #excluded info
-        excluded                             - a datastructure including innformation 
+    Output: 
+        Tree/list structure for storing the interpretation masks
     
+    
+    
+    Internal datastructure description: 
+        
+        ######################################################################
+        General information:
+        ######################################################################
+        .info                               - structure for storing general info
+        .info.numberOfPings                 - integer storing the number of pings in the acoustic file
+        .info.timeFirstPing                 - float storing the time of first ping in UNIX time
+        
+        
+        
+        
+        ######################################################################
+        Excluded region information: 
+        Excluded region indicates that full pings within an time intervall is 
+        excluded for further analysis
+        ######################################################################
+        .excluded                           - structure for storing excluden regions
+        .excluded.start_time                - list storing the start time of each excluded region in UNIX time
+        .excluded.numOfPings                - list storing the number of each ping for each excluded region
+        
+        
+        
+        
+        ######################################################################
+        Erased mask information: 
+        Erased mask indicate the pixels that are excluded from further analysis    
+        
+        The mask is developed from channel ID (linking frequency), ping number 
+        (linking time), and paired depths (linging range). 
+        
+        The paired depths are structured as followed: 
+            [100, 50]       - indicates that all depths from 100 to 150 are exclued
+            [100,50,50,50]  - indicates that all depths from 100 to 150, 
+                              and 200 to 250 is excluded. pings 150 to 200 is 
+                              thus included
+        ######################################################################
+        .erased                           - a datastructure including information of erased mask
+        .erased.referenceTime             - a float indicating the reference UNIX time, usually the time of the first erased pixel
+        .erased.masks                     - a list containing datastructures
+        .erased.masks[i]                  - a datastructe of the i´th mask
+        .erased.masks[i].channelID        - a list containing the channel ID nuber(i.e. 1, 2, 3, ...)
+        .erased.masks[i].pingOffset       - a list of containing the ping number (instead of time)
+        .erased.masks[i].depth            - a list of paired depth intervalls
+        
+        
+        
+        
+        ######################################################################
+        School box information: 
+        School box includes the box masks and the interpretation, i.e. the 
+        proportion the acoustic pixels within the box should be integrated to 
+        different acoustic cathegories
+        ######################################################################
+        .school                                     - list containing datastructure
+        .school[i].referenceTime                    - a float of the UNIX time of the first ping in the si'th chool box
+        .school[i].objectNumber                     - a integer reference to the school ID number
+        .school[i].relativePingNumber               - a list of ping numbers, this indicates the time domaine of the box
+        .school[i].min_depth                        - a list of the upper shape of the box
+        .school[i].max_depth                        - a list of the lower shape of the box
+        .school[i].interpretation                   - a list of datastructure including interpretation on each channel
+        .school[i].interpretations[ii].frequency    - the frequency that has been interperated on
+        .school[i].interpretations[ii].species_id   - a list of the different acoustic cathegories 
+        .school[i].interpretations[ii].fraction     - a list of the proportions to be used in the integration
+        
+        
+        
+        
+        
+        ######################################################################
+        Layer information: 
+        The layer information includes the masks and interpretation.
+        This is similar to the school box, but the school has a higher higherarcy. 
+        I.e. a box and a layer can overlap, but the pixels within the school uses
+        the interpretation information from the school and not from the layer.
+        ######################################################################
+        .layer                                  - a list containing datastructures
+        .layer[i].restSpecies                   - a str that reference to what has been used as the rest in proportion
+        .layer[i].interpretation                - a list of datastructure including interpretation on each channel
+        .layer[i].interpretation[ii].frequency  - the frequency that has been interpretated on
+        .layer[i].interpretation[ii].species_id - a list of the different acoustic cathegories
+        .layer[i].interpretation[ii].fraction   - a list of the proportions to be used in the integration
+        .layer[i].boundaries                    - a datastructure including the masks
+        .layer[i].boundaries.ID                 - a int refereing to the layer id
+        .layer[i].boundaries.ping               - a list of the ping number
+        .layer[i].boundaries.depths_upper       - a list of the upper shape of the layer
+        .layer[i].boundaries.depths_lower-      - a list of the lower shape of the layer
+        
+        
+        
+        
+        TODO: add bubble and threshold information
     
     """
 
@@ -57,12 +132,15 @@ class work_reader (object):
 
     def __init__(self,work_filename=''):
         
+        
+        
         #Define a structure type that is used to output the data
         class structtype(): 
             pass
         
         
-        #define outputs
+        
+        #define the first level of the output format
         self.school = list()
         self.layer = structtype()
         self.exclude = structtype()
@@ -85,9 +163,14 @@ class work_reader (object):
             
         
                     
-        #number of pings in file to info section
+        
+        ####################################################################
+        #Grab information that is linked to the information section
+        ####################################################################
         self.info.numberOfPings = np.int(doc['regionInterpretation']['timeRange']['@numberOfPings'])
         self.info.timeFirstPing = float(doc['regionInterpretation']['timeRange']['@start'])
+        
+        
         
         
         
@@ -96,58 +179,52 @@ class work_reader (object):
         ####################################################################
         if not not(doc['regionInterpretation']['exclusionRanges']):
             
+            #Define the structure of the excluded part
             self.exclude.start_time = list()
             self.exclude.numOfPings = list()
             
-            #Check if there is more than one and fill inn data
+            
+            #Check if there is more than one excluded region and fill inn data
             if len(doc['regionInterpretation']['exclusionRanges'])==1:
                 timeRange = doc['regionInterpretation']['exclusionRanges']['timeRange']
                 numOfPings = int(timeRange['@numberOfPings'])
                 start_time = float(timeRange['@start'])
-                
                 self.exclude.start_time = np.hstack((self.exclude.start_time,start_time))
                 self.exclude.numOfPings = np.hstack((self.exclude.numOfPings,numOfPings))
-#                self.exclude.start_time_UNIX = np.hstack((self.exclude.start_time_UNIX,start_time_UNIX))
-                
-                
             else:
-                #exclusionRanges
                 for timeRange in doc['regionInterpretation']['exclusionRanges']['timeRange']: 
                     numOfPings = int(timeRange['@numberOfPings'])
                     start_time = float(timeRange['@start'])
-                    
                     self.exclude.start_time = np.hstack((self.exclude.start_time,start_time))
                     self.exclude.numOfPings = np.hstack((self.exclude.numOfPings,numOfPings))
         
         
         
         
-        
-        
-        
-        
-        
         ####################################################################
-        #Procesing the information for the mask of erased pixels
+        #Procesing the information ffor the erased masks
         ####################################################################
         
         #check if there is any inforamtion of erased masks
         if not not(doc['regionInterpretation']['masking']):
+            #If so proceed
             
-            #Fillin info of the time of first erased pixel
+            #Fill in info of the time of first erased pixel
             self.erased.referenceTime = float(doc['regionInterpretation']['masking']['@referenceTime'])
             
-            #Set to a list of number of frequencies
+            #Make a list structure of all the different erased masks
             self.erased.masks = [None] * len(doc['regionInterpretation']['masking']['mask'])
             
-            
+            #For bookkeeping
             i=0
-            #handle if it is only for one or several frequencies
+            
+            #Check if there is erased mask on one or several channels
             if len(doc['regionInterpretation']['masking']['mask'])==1:
+                
                 #Grab the mask info
                 mask = doc['regionInterpretation']['masking']['mask']
                 
-                #define the structure and fill inn info
+                #define the datastructure 
                 self.erased.masks[i]=structtype()
                 self.erased.masks[i].channelID = int(mask['@channelID'])
                 self.erased.masks[i].pingOffset = list()
@@ -162,13 +239,12 @@ class work_reader (object):
                     for ping in mask['ping']: 
                         self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
                         self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
-                             
-
             else:
-                #loop through each frequency
+                
+                #loop through each channel
                 for mask in doc['regionInterpretation']['masking']['mask']: 
                     
-                    #Set to a list of number of frequencies
+                    #define the datastructure 
                     self.erased.masks[i]=structtype()
                     self.erased.masks[i].channelID = int(mask['@channelID'])
                     self.erased.masks[i].pingOffset = list()
@@ -191,29 +267,25 @@ class work_reader (object):
         
         
         
-        
-        
-        
-        
-        
-        
-        
-        
         ####################################################################
         # Processing the school mask information
         ####################################################################
+        
+        #Check if there is any school boxes
         if not not(doc['regionInterpretation']['schoolInterpretation']):
             
             #Define the size of the list
             self.school = [None] * len(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep'])
             
+            #for bookkeeping
             i = 0
 
             #Check if this is one ore several schools
             if len(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep'])==1: 
+                #grab school info
                 schools = doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
                 
-                #Define the school as a structure and fill in infoo
+                #Define the school as a structure and fill in info
                 self.school[i] = structtype()
                 self.school[i].referenceTime = float(schools['@referenceTime'])
                 self.school[i].objectNumber = int(schools['@objectNumber'])
@@ -228,7 +300,7 @@ class work_reader (object):
                     #set the number of interpretated frequecies
                     self.school[i].interpretations = [None] * len(interpretation)
                     
-                    #add interpretation info for each frequency
+                    #add interpretation info for each channel
                     ii=0
                     if len(interpretation)==1:
                         intr = interpretation
@@ -267,6 +339,7 @@ class work_reader (object):
                             
                             ii=ii+1
                 else: 
+                    #If no information is avaliable, output that this has no data
                     self.school[i].interpretations = structtype()
                     self.school[i].interpretations.frequency = 'No data'
                     self.school[i].interpretations.species_id = 'No data'
@@ -406,10 +479,9 @@ class work_reader (object):
         ####################################################################
         # Processing the layer information
         ####################################################################
+        #Check if there is layer info
         if not not(doc['regionInterpretation']['layerInterpretation']):    
             layer_info = doc['regionInterpretation']['layerInterpretation']
-            
-            
             
             #grab the layer definitions
             boundaries_definitions=layer_info['boundaries']['curveBoundary']
@@ -438,8 +510,86 @@ class work_reader (object):
             if len(layer_definitions['layer'])==1: 
                 lay = layer_definitions['layer']
                 
+            
+                #define the layer as a structure type
+                self.layer[i] = structtype()
+                
+                #store the rest species info
+                self.layer[i].restSpecies = lay['restSpecies']['@ID']
                 
                 
+                interpretation = lay['speciesInterpretationRoot']['speciesInterpretationRep']
+                
+                self.layer[i].interpretation = [None]*len(interpretation)
+                
+                ii = 0
+                if len(interpretation)==1: 
+                    #define the one layer as a structure
+                    self.layer[i].interpretation[ii] = structtype()
+                    
+                    #add frequency
+                    self.layer[i].interpretation[ii].frequency = intr['@frequency']
+                    self.layer[i].interpretation[ii].species_id = list()
+                    self.layer[i].interpretation[ii].fraction = list()
+                    
+                    species = intr['species']
+                    
+                    if type(species)==list: 
+                        for spec in species: 
+                            self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
+                            self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                    else: 
+                        self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
+                        self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+                            
+                else: 
+                    for intr in interpretation: 
+                        #define the one layer as a structure
+                        self.layer[i].interpretation[ii] = structtype()
+                        
+                        #add frequency
+                        self.layer[i].interpretation[ii].frequency = intr['@frequency']
+                        self.layer[i].interpretation[ii].species_id = list()
+                        self.layer[i].interpretation[ii].fraction = list()
+                        
+                        species = intr['species']
+                        
+                        if type(species)==list: 
+                            for spec in species: 
+                                self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
+                                self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                        else: 
+                            self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
+                            self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+                        ii+=1
+                     
+                     
+                #get mask information
+                boundaries = lay['boundaries']['curveBoundary']
+                if len(boundaries)!=2: 
+                    print('Check number of curveBoundary')
+                    
+                    
+                self.layer[i].boundaries = structtype()
+                self.layer[i].boundaries.ID =int(lay['@objectNumber'])
+                self.layer[i].boundaries.referenceTime = list()
+                
+                
+                
+                b_id = [b.id for b in bound_keep]
+                for bound in boundaries: 
+                    
+                    idx = b_id.index(int(bound['@id']))
+                    self.layer[i].boundaries.ping = np.arange(bound_keep[idx].startPing ,bound_keep[idx].startPing +bound_keep[idx].numberOfPings)
+                    if bound['@isUpper']=='true': 
+                         self.layer[i].boundaries.depths_upper = bound_keep[idx].depths
+                    else:
+                         self.layer[i].boundaries.depths_lower = bound_keep[idx].depths
+                            
+                
+                i+=1
+        
+        
             else: 
                 for lay in layer_definitions['layer']: 
                     
