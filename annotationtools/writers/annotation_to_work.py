@@ -25,45 +25,46 @@ class annotation_to_work (object):
             
             For some reason we need to add 1 houre!!!
             '''
-            return(round(float(timestamp/1e9+(datetime(1601, 1, 1)-datetime(1970, 1, 1,1,0)).total_seconds()),2))
+            return((float(timestamp/1e9+(datetime(1601, 1, 1)-datetime(1970, 1, 1,1,0)).total_seconds())))
             
             
             
-#        #Grab mask priority
-#        priority = np.array([i.priority for i in annotation.mask])
-#        
-#        region_channels = [i.region_channels for i in annotation.mask]
-#        
-#        unique_region_channels = list()
-#        for r in region_channels:
-#            unique_region_channels = np.unique(np.hstack((unique_region_channels,r)))
-#            
-#            
-#        for urc in unique_region_channels: 
-#            for ii in range(len(priority)): 
-#                if priority[ii] ==1: 
-#                    if type(region_channels[ii]) == int: 
-#                        if int(urc) == region_channels[ii]: 
-#                            print(region_channels[ii])
-#                    else: 
-#                        if int(urc) in region_channels[ii]: 
-#                            print(region_channels[ii])
         
         # create the file structure
         data = ET.Element('regionInterpretation')
         data.set('version','1.0')
         
         
+        #Set the first line where we describe the time of first ping and 
+        #number of pings in file
         timeRange = ET.SubElement(data, 'timeRange')
-        timeRange.set('start',str('%.11E' % Decimal(epoce_to_UNIXtime(annotation.info.timeFirstPing))))
+        timeRange.set('start',str('%.12E' % Decimal(epoce_to_UNIXtime(annotation.info.timeFirstPing))))
         timeRange.set('numberOfPings',str(annotation.info.numberOfPings))
         
         
         
-        
+        #Write the information of excluded ranges
         exclusionRanges = ET.SubElement(data, 'exclusionRanges')
+        for m in annotation.mask:
+            if(m.min_depth == 0 and m.max_depth == 9999 and m.priority == 1):
+                timeRange=ET.SubElement(exclusionRanges, 'timeRange')
+                timeRange.set('start',str('%.12E' % Decimal(epoce_to_UNIXtime(m.mask_times[0]))))
+                timeRange.set('numberOfPings',str(len(m.mask_times)))
+        
+        
+        #Write the output of the bubbleCorrectionRanges
+        #TODO: this has to be done in the reader
         bubbleCorrectionRanges = ET.SubElement(data, 'bubbleCorrectionRanges')
+        
+        
+        
+        #write the information of mask per channel
         masking = ET.SubElement(data, 'masking')
+        
+        for chn_i in range(len(annotation.info.channel_names)):
+            for m in annotation.mask: 
+                if m.priority==1 and (m.min_depth != 0 or m.max_depth != 9999) and m.region_type == 'no data':
+                    print(m.region_type)
         
         
         
@@ -76,7 +77,7 @@ class annotation_to_work (object):
         
         # create a new XML file with the results
         mydata = minidom.parseString(ET.tostring(data)).toprettyxml(indent="   ")
-        myfile = open("E:/Arbeid/Koding/CRIMAC/code_repo/data/ACOUSTIC/LSSS/WORK/work_2.work", "w")
+        myfile = open(filename, "w")
         myfile.write(str(mydata))
 
         

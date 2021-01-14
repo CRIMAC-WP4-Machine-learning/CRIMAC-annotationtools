@@ -686,9 +686,53 @@ class work_reader (object):
 
 class work_to_annotation(object): 
     
-    '''
-    class to convert work object to annotation
-    '''
+    
+    """
+    Function for converting the internal python structure of the work file to 
+    annotation format.
+    
+    Author: 
+        Sindre Vatnehol
+        Institue of Marine Research
+        mail: sindre.vatnehol@hi.no
+    
+    
+    Input: 
+        work:               fthe internal work structure defined in work_reader
+        raw_filename:       file name or file path of a .raw file
+        
+    Output: 
+        Tree/list structure for storing the interpretation masks in annotation format
+    
+    
+    
+    Internal datastructure description: 
+        self.info                   - defining a datastructure to include general information
+        self.info.numberOfPings     - integer including the number of pings in the raw file
+        self.info.timeFirstPing     - integer of the time of first ping given in nanoseconds since 1601
+        self.info.ping_time         - list of the time of each ping given in nanoseconds since 1601
+        self.info.channel_names     - list containing the name of each channel
+        
+        self.mask                      - list of datastructures including the interpretation and masks
+        self.mask[i]                    - the datastructure of the i'th mask 
+        self.mask[i].region_id          - str containing the ID of the mask 
+        self.mask[i].region_name        - str containing the name of the region, currently not used
+        self.mask[i].region_provenance  - str containing the provenance, here it is 'LSSS'
+        self.mask[i].region_type        - str describing the type, here it is 'no data', 'analysis'
+        self.mask[i].region_channels    - list of all channels the interpretation is used on, i.e. 1
+        self.mask[i].regions            - list currently not used
+        self.mask[i].start_time         - time of the first ping in the mask given in nanoseconds since 1601
+        self.mask[i].end_time           - time of the lsat ping in the mask given in nanoseconds since 1601 
+        self.mask[i].max_depth          - integer of the maximum depth/range of the mask
+        self.mask[i].min_depth          - integer of the minimum depth/range of the mask
+        self.mask[i].mask_times         - = self.info.ping_time[((self.info.ping_time>=self.mask[mask_i].start_time) & (self.info.ping_time<=self.mask[mask_i].end_time))]
+        self.mask[i].priority = 1
+        self.mask[i].mask_depth         - list of paired depths
+    
+        
+    TODO: make the raw reader more general so it can handle between EK80 and EK60 data
+        
+    """
     
     def __init__(self,work,raw_filename = ''): 
         
@@ -697,6 +741,8 @@ class work_to_annotation(object):
         #Define a structure type that is used to output the data
         class structtype(): 
             pass
+        
+        
         
         
         def depthConverter(depth): 
@@ -721,23 +767,45 @@ class work_to_annotation(object):
             
             
             
+        #TODO: how to handle if it is EK80 data and not EK60
         data = EK60.EK60()
         data.read_raw(raw_filename)
-        ping_time = data.get_channel_data(frequencies=38000)[38000][0].ping_time
         
         
+        #make a list of the different ping times per channel
+        #It may be different between each channel if they are pinging sequentually
+        ping_time = [None] * data.n_channels
+        for i in range(data.n_channels):
+            p_time = data.get_raw_data(channel_number=i+1).ping_time
+            ping_time[i] = np.array([(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in p_time])
+
+
+        #If all ping times for each channel is equal, just make one vector
+        keep_list= False
+        for i in range(1,data.n_channels):
+            if all(ping_time[0]==ping_time[i])==False:
+                keep_list = True
+                break
+        if keep_list==False: 
+            ping_time=ping_time[0]
         
+        channel_ids=data.channel_ids
+        
+        
+        #some tests
+        if not data.n_channels==work.info.numberOfPings: 
+            print('Warning: Number of pings in raw and work dont match!')
         
         
         
         ####################################################################
-        #Info secion
+        #Info section
         ####################################################################
         self.info = structtype()
         self.info.numberOfPings=work.info.numberOfPings
         self.info.timeFirstPing=UNIXtime_to_epoce(work.info.timeFirstPing)
-        self.info.ping_time = np.array([(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in ping_time])
-        self.info.channel_names = list(data.get_channel_data().keys())
+        self.info.ping_time = ping_time
+        self.info.channel_names = list(data.channel_ids)
         
         
         
@@ -759,8 +827,8 @@ class work_to_annotation(object):
             self.mask[mask_i].region_id = list()
             self.mask[mask_i].region_name = list()
             self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'nodata'
-            self.mask[mask_i].region_channels= list(np.arange(len(self.info.channel_names))+1)
+            self.mask[mask_i].region_type= 'no data'
+            self.mask[mask_i].region_channels= self.info.channel_names
             self.mask[mask_i].regions= list()
             self.mask[mask_i].start_time= UNIXtime_to_epoce(work.exclude.start_time[i])
             self.mask[mask_i].end_time = self.info.ping_time[np.int(np.where(self.mask[mask_i].start_time==self.info.ping_time)[0])+int(work.exclude.numOfPings[i])-1]
@@ -783,9 +851,9 @@ class work_to_annotation(object):
             self.mask[mask_i].region_id = list()
             self.mask[mask_i].region_name = list()
             self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'nodata'
+            self.mask[mask_i].region_type= 'no data'
             self.mask[mask_i].regions= list()
-            self.mask[mask_i].region_channels=work.erased.masks[i].channelID 
+            self.mask[mask_i].region_channels=self.info.channel_names[work.erased.masks[i].channelID]
             self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
             self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
             self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
@@ -817,9 +885,9 @@ class work_to_annotation(object):
             self.mask[mask_i].min_depth = min(work.school[i].min_depth )
             self.mask[mask_i].max_depth = max(work.school[i].max_depth)
             self.mask[mask_i].mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
-#            
+           
             if type(work.school[i].interpretations) == list:
-                self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(ip)+1 for f in work.school[i].interpretations for ip in list(data.get_channel_data().keys()) if f.frequency in ip]
+                self.mask[mask_i].region_channels=[ip for f in work.school[i].interpretations for ip in channel_ids if f.frequency in ip]
                 self.mask[mask_i].region_category_ids = [c.species_id for c in work.school[i].interpretations]
                 self.mask[mask_i].region_category_names = [c.species_id for c in work.school[i].interpretations]
                 self.mask[mask_i].region_category_proportions = [c.fraction for c in work.school[i].interpretations]
@@ -827,8 +895,11 @@ class work_to_annotation(object):
                 self.mask[mask_i].region_category_ids=work.school[i].interpretations.species_id
                 self.mask[mask_i].region_category_names = work.school[i].interpretations.species_id
                 self.mask[mask_i].region_category_proportions = work.school[i].interpretations.fraction
-                self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(ip)+1 for ip in list(data.get_channel_data().keys()) if work.school[i].interpretations.frequency in ip]
+                self.mask[mask_i].region_channels=[ip for ip in channel_ids if work.school[i].interpretations.frequency in ip]
             self.mask[mask_i].priority = 2
+            
+            
+        
             
         ####################################################################
         #Add layer mask
@@ -849,7 +920,7 @@ class work_to_annotation(object):
             self.mask[mask_i].min_depth = min(work.layer[i].boundaries.depths_upper)
             self.mask[mask_i].max_depth = max(work.layer[i].boundaries.depths_lower)
             self.mask[mask_i].mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
-            self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(i)+1 for f in work.layer[i].interpretation for i in list(data.get_channel_data().keys()) if f.frequency in i]
+            self.mask[mask_i].region_channels=[i for f in work.layer[i].interpretation for i in channel_ids if f.frequency in i]
             self.mask[mask_i].region_category_ids = [c.species_id for c in work.layer[i].interpretation]
             self.mask[mask_i].region_category_names = [c.species_id for c in work.layer[i].interpretation]
             self.mask[mask_i].region_category_proportions = [c.fraction for c in work.layer[i].interpretation]
