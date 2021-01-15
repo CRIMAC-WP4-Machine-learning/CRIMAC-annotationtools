@@ -20,6 +20,18 @@ class annotation_to_work (object):
     def __init__(self,filename='',annotation=[]):
         
         
+        
+        def reversed_depthConverter(depth): 
+            dp = list()
+            for idx in range(len(depth)):
+                if idx>0: 
+                    dp.append(str(round(depth[idx] -depth[idx-1],7)))
+                else: 
+                    dp.append(str(depth[idx]))
+                 
+            return(' '.join(dp))
+    
+        
         def epoce_to_UNIXtime(timestamp):
             '''Helper function to convert epoc time to Work
             
@@ -60,17 +72,64 @@ class annotation_to_work (object):
         
         #write the information of mask per channel
         masking = ET.SubElement(data, 'masking')
+        min_time = []
+        for m in annotation.mask:
+            min_time = np.hstack((min_time,min(m.mask_times)))
+        masking.set('referenceTime',str('%.12E' % Decimal(epoce_to_UNIXtime(min(min_time)))))
         
-        for chn_i in range(len(annotation.info.channel_names)):
-            for m in annotation.mask: 
-                if m.priority==1 and (m.min_depth != 0 or m.max_depth != 9999) and m.region_type == 'no data':
-                    print(m.region_type)
-        
-        
+        # for chn_i in annotation.info.channel_names:
+        #     for m in annotation.mask: 
+        #         if m.priority==1 and (m.min_depth != 0 or m.max_depth != 9999) and m.region_type == 'no data' :
+        #             mask = ET.SubElement(masking, 'mask')
+        #             mask.set('channelID',str(1+annotation.info.channel_names.index(chn_i)))
+        #             for p in range(len(m.mask_depth)):
+        #                 ping = ET.SubElement(mask,'ping')
+        #                 ping.set('pingOffset',str(np.where(annotation.info.ping_time==m.mask_times[p])[0][0]))
+        #                 ping.text=reversed_depthConverter(m.mask_depth[p])
+                    
         
         thresholding = ET.SubElement(data, 'thresholding')
+        
+        
         layerInterpretation = ET.SubElement(data, 'layerInterpretation')
+        boundaries = ET.SubElement(layerInterpretation, 'boundaries')
+        
+        for m in annotation.mask: 
+            if m.priority==3: 
+                upper = [depth[0] for depth in m.mask_depth]
+                asdf
+        
+        
+        
+        
+        ####################################################################
+        #Process the school information
+        ####################################################################
         schoolInterpretation = ET.SubElement(data, 'schoolInterpretation')
+        for m in annotation.mask: 
+            if m.priority==2: 
+                school = ET.SubElement(schoolInterpretation,'schoolMaskRep')
+                school.set('referenceTime',str('%.12E' % Decimal(epoce_to_UNIXtime(annotation.info.timeFirstPing))))
+                school.set('hasBeenVisisted','true')
+                school.set('objectNumber',str(m.region_id))
+                #TODO: do we need Rest species???
+                spintroot = ET.SubElement(school,'speciesInterpretationRoot')
+                for chn in m.region_channels: 
+                    chn_idx = annotation.info.channel_names.index(chn)
+                    interpRep = ET.SubElement(spintroot,'speciesInterpretationRep')
+                    interpRep.set('frequency','?')
+                    for spec in range(len(m.region_category_ids[chn_idx])):
+                        species = ET.SubElement(interpRep,'species')
+                        species.set('ID',str(m.region_category_ids[chn_idx][spec]))
+                        species.set('fraction',str(m.region_category_proportions[chn_idx][spec]))
+                for i in range(len(m.mask_times)): 
+                    ping_idx = int(np.where(m.mask_times[i]==annotation.info.ping_time)[0])
+                    pingMask = ET.SubElement(school,'pingMask')
+                    pingMask.set('relativePingNumber',str(ping_idx+1))
+                    pingMask.text = ' '.join([str(t) for t in m.mask_depth[i]])
+                
+                    
+                    
         #item2.set('name','item2')
         #item1.text = 'item1abc'
         #item2.text = 'item2abc'

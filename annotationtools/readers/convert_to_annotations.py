@@ -853,7 +853,7 @@ class work_to_annotation(object):
             self.mask[mask_i].region_provenance= 'LSSS'
             self.mask[mask_i].region_type= 'no data'
             self.mask[mask_i].regions= list()
-            self.mask[mask_i].region_channels=self.info.channel_names[work.erased.masks[i].channelID]
+            self.mask[mask_i].region_channels=self.info.channel_names[work.erased.masks[i].channelID-1]
             self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
             self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
             self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
@@ -879,7 +879,7 @@ class work_to_annotation(object):
             self.mask[mask_i].region_type= 'analysis'
             self.mask[mask_i].regions= list()
             self.mask[mask_i].region_id = work.school[i].objectNumber
-            self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.school[i].relativePingNumber]
+            self.mask[mask_i].mask_times = [ping_time[int(p)-1] for p in work.school[i].relativePingNumber]
             self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
             self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
             self.mask[mask_i].min_depth = min(work.school[i].min_depth )
@@ -888,13 +888,13 @@ class work_to_annotation(object):
            
             if type(work.school[i].interpretations) == list:
                 self.mask[mask_i].region_channels=[ip for f in work.school[i].interpretations for ip in channel_ids if f.frequency in ip]
-                self.mask[mask_i].region_category_ids = [c.species_id for c in work.school[i].interpretations]
-                self.mask[mask_i].region_category_names = [c.species_id for c in work.school[i].interpretations]
-                self.mask[mask_i].region_category_proportions = [c.fraction for c in work.school[i].interpretations]
+                self.mask[mask_i].region_category_ids = [(c.species_id) for c in work.school[i].interpretations]
+                self.mask[mask_i].region_category_names = [(c.species_id) for c in work.school[i].interpretations]
+                self.mask[mask_i].region_category_proportions = [(c.fraction) for c in work.school[i].interpretations]
             else: 
-                self.mask[mask_i].region_category_ids=work.school[i].interpretations.species_id
-                self.mask[mask_i].region_category_names = work.school[i].interpretations.species_id
-                self.mask[mask_i].region_category_proportions = work.school[i].interpretations.fraction
+                self.mask[mask_i].region_category_ids=(work.school[i].interpretations.species_id)
+                self.mask[mask_i].region_category_names = (work.school[i].interpretations.species_id)
+                self.mask[mask_i].region_category_proportions = (work.school[i].interpretations.fraction)
                 self.mask[mask_i].region_channels=[ip for ip in channel_ids if work.school[i].interpretations.frequency in ip]
             self.mask[mask_i].priority = 2
             
