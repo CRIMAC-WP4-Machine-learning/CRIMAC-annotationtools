@@ -58,7 +58,7 @@ class annotation_to_work (object):
         #Write the information of excluded ranges
         exclusionRanges = ET.SubElement(data, 'exclusionRanges')
         for m in annotation.mask:
-            if(m.min_depth == 0 and m.max_depth == 9999 and m.priority == 1):
+            if(m.min_depth == 0.0 and m.max_depth == 9999.9 and m.priority == 1):
                 timeRange=ET.SubElement(exclusionRanges, 'timeRange')
                 timeRange.set('start',str('%.12E' % Decimal(epoce_to_UNIXtime(m.mask_times[0]))))
                 timeRange.set('numberOfPings',str(len(m.mask_times)))
@@ -77,15 +77,15 @@ class annotation_to_work (object):
             min_time = np.hstack((min_time,min(m.mask_times)))
         masking.set('referenceTime',str('%.12E' % Decimal(epoce_to_UNIXtime(min(min_time)))))
         
-        # for chn_i in annotation.info.channel_names:
-        #     for m in annotation.mask: 
-        #         if m.priority==1 and (m.min_depth != 0 or m.max_depth != 9999) and m.region_type == 'no data' :
-        #             mask = ET.SubElement(masking, 'mask')
-        #             mask.set('channelID',str(1+annotation.info.channel_names.index(chn_i)))
-        #             for p in range(len(m.mask_depth)):
-        #                 ping = ET.SubElement(mask,'ping')
-        #                 ping.set('pingOffset',str(np.where(annotation.info.ping_time==m.mask_times[p])[0][0]))
-        #                 ping.text=reversed_depthConverter(m.mask_depth[p])
+        for chn_i in annotation.info.channel_names:
+             for m in annotation.mask: 
+                 if m.priority==1 and (m.min_depth != 0.0 or m.max_depth != 9999.9) and m.region_type == 'no_data' :
+                     mask = ET.SubElement(masking, 'mask')
+                     mask.set('channelID',str(1+annotation.info.channel_names.index(chn_i)))
+                     for p in range(len(m.mask_depth)):
+                         ping = ET.SubElement(mask,'ping')
+                         ping.set('pingOffset',str(np.where(annotation.info.ping_time==m.mask_times[p])[0][0]))
+                         ping.text=reversed_depthConverter(m.mask_depth[p])
                     
         
         thresholding = ET.SubElement(data, 'thresholding')
@@ -94,10 +94,6 @@ class annotation_to_work (object):
         layerInterpretation = ET.SubElement(data, 'layerInterpretation')
         boundaries = ET.SubElement(layerInterpretation, 'boundaries')
         
-        for m in annotation.mask: 
-            if m.priority==3: 
-                upper = [depth[0] for depth in m.mask_depth]
-                asdf
         
         
         

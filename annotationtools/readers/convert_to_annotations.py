@@ -5,7 +5,7 @@
 import numpy as np
 import xmltodict
 from datetime import datetime
-from echolab2.instruments import EK60
+from echolab2.instruments import EK60, EK80
 
 
 
@@ -756,8 +756,29 @@ class work_to_annotation(object):
             return(depth)
     
             
+            # Detect FileType
+        def ek_detect(fname):
+            with open(fname, 'rb') as f:
+                file_header = f.read(8)
+                file_magic = file_header[-4:]
+                if file_magic.startswith(b'XML'):
+                    return "EK80"
+                elif file_magic.startswith(b'CON'):
+                    return "EK60"
+                else:
+                    return None
             
             
+        def ek_read(fname):
+            if ek_detect(fname) == "EK80":
+                ek80_obj = EK80.EK80()
+                ek80_obj.read_raw(fname)
+                return ek80_obj
+            elif ek_detect(fname) == "EK60":
+                ek60_obj = EK60.EK60()
+                ek60_obj.read_raw(fname)
+                return ek60_obj
+                    
             
             
         def UNIXtime_to_epoce(timestamp):
@@ -766,17 +787,19 @@ class work_to_annotation(object):
             
             
             
-            
-        #TODO: how to handle if it is EK80 data and not EK60
-        data = EK60.EK60()
-        data.read_raw(raw_filename)
+        #Read ek data    
+        data = ek_read(raw_filename)
+        
+        
+        # Placeholder for all frequrncy
+        all_frequency = []
         
         
         #make a list of the different ping times per channel
         #It may be different between each channel if they are pinging sequentually
         ping_time = [None] * data.n_channels
         for i in range(data.n_channels):
-            p_time = data.get_raw_data(channel_number=i+1).ping_time
+            p_time = data.get_channel_data(channel_numbers=i+1)[i+1][0].ping_time
             ping_time[i] = np.array([(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in p_time])
 
 
@@ -793,7 +816,7 @@ class work_to_annotation(object):
         
         
         #some tests
-        if not data.n_channels==work.info.numberOfPings: 
+        if not len(ping_time)==work.info.numberOfPings: 
             print('Warning: Number of pings in raw and work dont match!')
         
         
@@ -827,14 +850,14 @@ class work_to_annotation(object):
             self.mask[mask_i].region_id = list()
             self.mask[mask_i].region_name = list()
             self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'no data'
+            self.mask[mask_i].region_type= 'no_data'
             self.mask[mask_i].region_channels= self.info.channel_names
             self.mask[mask_i].regions= list()
             self.mask[mask_i].start_time= UNIXtime_to_epoce(work.exclude.start_time[i])
             self.mask[mask_i].end_time = self.info.ping_time[np.int(np.where(self.mask[mask_i].start_time==self.info.ping_time)[0])+int(work.exclude.numOfPings[i])-1]
             self.mask[mask_i].mask_times = self.info.ping_time[((self.info.ping_time>=self.mask[mask_i].start_time) & (self.info.ping_time<=self.mask[mask_i].end_time))]
-            self.mask[mask_i].max_depth = 9999
-            self.mask[mask_i].min_depth = 0
+            self.mask[mask_i].max_depth = 9999.9
+            self.mask[mask_i].min_depth = 0.0
             self.mask[mask_i].mask_depth = [[self.mask[mask_i].min_depth,self.mask[mask_i].max_depth] for x in range(len(self.mask[mask_i].mask_times))]
             self.mask[mask_i].priority = 1
 
@@ -851,13 +874,13 @@ class work_to_annotation(object):
             self.mask[mask_i].region_id = list()
             self.mask[mask_i].region_name = list()
             self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'no data'
+            self.mask[mask_i].region_type= 'no_data'
             self.mask[mask_i].regions= list()
             self.mask[mask_i].region_channels=self.info.channel_names[work.erased.masks[i].channelID-1]
             self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
             self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
             self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
-            self.mask[mask_i].mask_depth = [depthConverter(d) for d in work.erased.masks[i].depth]
+            self.mask[mask_i].mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
             self.mask[mask_i].min_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
             self.mask[mask_i].max_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
             self.mask[mask_i].priority = 1
