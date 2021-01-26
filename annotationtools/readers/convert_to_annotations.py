@@ -143,7 +143,6 @@ class work_reader (object):
         #define the first level of the output format
         self.school = list()
         self.layer = structtype()
-        self.exclude = structtype()
         self.erased = structtype()
         self.info = structtype()  
         
@@ -179,6 +178,8 @@ class work_reader (object):
         ####################################################################
         if not not(doc['regionInterpretation']['exclusionRanges']):
             
+            self.exclude = structtype()
+            
             #Define the structure of the excluded part
             self.exclude.start_time = list()
             self.exclude.numOfPings = list()
@@ -212,44 +213,27 @@ class work_reader (object):
             #Fill in info of the time of first erased pixel
             self.erased.referenceTime = float(doc['regionInterpretation']['masking']['@referenceTime'])
             
-            #Make a list structure of all the different erased masks
-            self.erased.masks = [None] * len(doc['regionInterpretation']['masking']['mask'])
             
-            #For bookkeeping
-            i=0
-            
-            #Check if there is erased mask on one or several channels
-            if len(doc['regionInterpretation']['masking']['mask'])==1:
+            #Check if there is mask information
+            if doc['regionInterpretation']['masking'].get('mask') != None:
+                #Make a list structure of all the different erased masks
+                self.erased.masks = [None] * len(doc['regionInterpretation']['masking']['mask'])
                 
-                #Grab the mask info
-                mask = doc['regionInterpretation']['masking']['mask']
+                #For bookkeeping
+                i=0
                 
-                #define the datastructure 
-                self.erased.masks[i]=structtype()
-                self.erased.masks[i].channelID = int(mask['@channelID'])
-                self.erased.masks[i].pingOffset = list()
-                self.erased.masks[i].depth =list()
                 
-                #recognize if it is only for one ping, then fill inn info
-                if len(mask['ping']) ==1: 
-                    ping = mask['ping']
-                    self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
-                    self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
-                else: 
-                    for ping in mask['ping']: 
-                        self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
-                        self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
-            else:
-                
-                #loop through each channel
-                for mask in doc['regionInterpretation']['masking']['mask']: 
+                #Check if there is erased mask on one or several channels
+                if len(doc['regionInterpretation']['masking']['mask'])==1:
+                    
+                    #Grab the mask info
+                    mask = doc['regionInterpretation']['masking']['mask']
                     
                     #define the datastructure 
                     self.erased.masks[i]=structtype()
                     self.erased.masks[i].channelID = int(mask['@channelID'])
                     self.erased.masks[i].pingOffset = list()
                     self.erased.masks[i].depth =list()
-                    
                     
                     #recognize if it is only for one ping, then fill inn info
                     if len(mask['ping']) ==1: 
@@ -260,11 +244,32 @@ class work_reader (object):
                         for ping in mask['ping']: 
                             self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
                             self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
-                    i += 1
-
-        
-        
-        
+                else:
+                    
+                    #loop through each channel
+                    for mask in doc['regionInterpretation']['masking']['mask']: 
+                        
+                        #define the datastructure 
+                        self.erased.masks[i]=structtype()
+                        self.erased.masks[i].channelID = int(mask['@channelID'])
+                        self.erased.masks[i].pingOffset = list()
+                        self.erased.masks[i].depth =list()
+                        
+                        
+                        #recognize if it is only for one ping, then fill inn info
+                        if len(mask['ping']) ==1: 
+                            ping = mask['ping']
+                            self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
+                            self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
+                        else: 
+                            for ping in mask['ping']: 
+                                self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
+                                self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
+                        i += 1
+    
+            
+            
+            
         
         
         ####################################################################
@@ -442,30 +447,89 @@ class work_reader (object):
         ####################################################################
         # Processing the Buble correction information
         ####################################################################
-#        bubbleCorrection = np.ones(self.info.numberOfPings,np.float)
-#        if not not(doc['regionInterpretation']['bubbleCorrectionRanges']):
-#            if len(doc['regionInterpretation']['bubbleCorrectionRanges'])==1: 
-#                timeRange = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
-#                start_time = UNIXtime_to_epoce(float(timeRange['@start']))
-#                bubbleCorrection[range(self.info.ping_time.index(start_time),self.info.ping_time.index(start_time)+int(timeRange['@numberOfPings']))]=float(timeRange['@bubbleCorrectionValue'])
-#            else:
-#                for timeRange in doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']: 
-#                    timeRange = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
-#                    start_time = UNIXtime_to_epoce(float(timeRange['@start']))
-#                    bubbleCorrection[range(self.info.ping_time.index(start_time),self.info.ping_time.index(start_time)+int(timeRange['@numberOfPings']))]=float(timeRange['@bubbleCorrectionValue'])
+        if type(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])!=list: 
+            bubble = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
+            self.info.bubble = structtype()
+            self.info.bubble.start = float(bubble['@start'])
+            self.info.bubble.numberOfPings = int(bubble['@numberOfPings'])
+            self.info.bubble.CorrectionValue = float(bubble['@bubbleCorrectionValue'])
+        else: 
+            self.info.bubble = [None] * len(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])
+            i_buble = 0
+            for bubble in doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']: 
+                self.info.bubble[i_buble] = structtype()
+                self.info.bubble[i_buble].start = float(bubble['@start'])
+                self.info.bubble[i_buble].numberOfPings = int(bubble['@numberOfPings'])
+                self.info.bubble[i_buble].CorrectionValue = float(bubble['@bubbleCorrectionValue'])
+                i_buble+=1
+             
             
-            
-        
-        
-        
+             
+        with open(work_filename) as fd:
+            doc = xmltodict.parse(fd.read())
         
         
                 
         ####################################################################
         # Processing the thresholding information
         ####################################################################
+        
+        if doc['regionInterpretation'].get('thresholding') != None: 
             
+            if type(doc['regionInterpretation']['thresholding']['upperThresholdActive'])!=list:
+                upperThresholdActive = doc['regionInterpretation']['thresholding']['upperThresholdActive']['timeRange']
+                self.info.upperThresholdActive=structtype()
+                self.info.upperThresholdActive.start = float(upperThresholdActive['@start'])
+                self.info.upperThresholdActive.numberOfPings = int(upperThresholdActive['@numberOfPings'])
+                self.info.upperThresholdActive.value = (upperThresholdActive['@value'])
+            else:  
+                self.info.upperThresholdActive = [None] * len(doc['regionInterpretation']['upperThresholdActive']['timeRange'])
+                i = 0
+                for upperThresholdActive in doc['regionInterpretation']['thresholding']['upperThresholdActive']['timeRange']:
+                    
+                    self.info.upperThresholdActive[i]=structtype()
+                    self.info.upperThresholdActive[i].start = float(upperThresholdActive['@start'])
+                    self.info.upperThresholdActive[i].numberOfPings = int(upperThresholdActive['@numberOfPings'])
+                    self.info.upperThresholdActive[i].value = (upperThresholdActive['@value'])
+                    i+=1
+                    
             
+                
+            if type(doc['regionInterpretation']['thresholding']['upperThreshold'])!=list:
+                upperThreshold = doc['regionInterpretation']['thresholding']['upperThreshold']['timeRange']
+                self.info.upperThreshold=structtype()
+                self.info.upperThreshold.start = float(upperThreshold['@start'])
+                self.info.upperThreshold.numberOfPings = int(upperThreshold['@numberOfPings'])
+                self.info.upperThreshold.value = float(upperThreshold['@value'])
+            else:  
+                self.info.upperThreshold = [None] * len(doc['regionInterpretation']['upperThreshold']['timeRange'])
+                i = 0
+                for upperThreshold in doc['regionInterpretation']['thresholding']['upperThreshold']['timeRange']:
+                    
+                    self.info.upperThreshold[i]=structtype()
+                    self.info.upperThreshold[i].start = float(upperThreshold['@start'])
+                    self.info.upperThreshold[i].numberOfPings = int(upperThreshold['@numberOfPings'])
+                    self.info.upperThreshold[i].value = float(upperThreshold['@value'])
+                    i+=1
+                    
+            
+            if type(doc['regionInterpretation']['thresholding']['lowerThreshold'])!=list:
+                lowerThreshold = doc['regionInterpretation']['thresholding']['lowerThreshold']['timeRange']
+                self.info.lowerThreshold=structtype()
+                self.info.lowerThreshold.start = float(lowerThreshold['@start'])
+                self.info.lowerThreshold.numberOfPings = int(lowerThreshold['@numberOfPings'])
+                self.info.lowerThreshold.value = float(lowerThreshold['@value'])
+            else:  
+                self.info.lowerThreshold = [None] * len(doc['regionInterpretation']['lowerThreshold']['timeRange'])
+                i = 0
+                for lowerThreshold in doc['regionInterpretation']['thresholding']['lowerThreshold']['timeRange']:
+                    
+                    self.info.lowerThreshold[i]=structtype()
+                    self.info.lowerThreshold[i].start = float(lowerThreshold['@start'])
+                    self.info.lowerThreshold[i].numberOfPings = int(lowerThreshold['@numberOfPings'])
+                    self.info.lowerThreshold[i].value = float(lowerThreshold['@value'])
+                    i+=1
+                
         
         
         
@@ -507,7 +571,7 @@ class work_reader (object):
             
             #recognise if there is one or several layers
             i=0
-            if len(layer_definitions['layer'])==1: 
+            if type(layer_definitions['layer'])!=list: 
                 lay = layer_definitions['layer']
                 
             
@@ -515,53 +579,55 @@ class work_reader (object):
                 self.layer[i] = structtype()
                 
                 #store the rest species info
-                self.layer[i].restSpecies = lay['restSpecies']['@ID']
+#                self.layer[i].restSpecies = lay['restSpecies']['@ID']
                 
-                
-                interpretation = lay['speciesInterpretationRoot']['speciesInterpretationRep']
-                
-                self.layer[i].interpretation = [None]*len(interpretation)
-                
-                ii = 0
-                if len(interpretation)==1: 
-                    #define the one layer as a structure
-                    self.layer[i].interpretation[ii] = structtype()
+                if lay['speciesInterpretationRoot']!= None: 
+                        
+                    interpretation = lay['speciesInterpretationRoot']['speciesInterpretationRep']
                     
-                    #add frequency
-                    self.layer[i].interpretation[ii].frequency = intr['@frequency']
-                    self.layer[i].interpretation[ii].species_id = list()
-                    self.layer[i].interpretation[ii].fraction = list()
                     
-                    species = intr['species']
-                    
-                    if type(species)==list: 
-                        for spec in species: 
-                            self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
-                            self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
-                    else: 
-                        self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
-                        self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
-                            
-                else: 
-                    for intr in interpretation: 
+                    ii = 0
+                    if len(interpretation)==1: 
                         #define the one layer as a structure
-                        self.layer[i].interpretation[ii] = structtype()
+                        self.layer[i].interpretation = structtype()
                         
                         #add frequency
-                        self.layer[i].interpretation[ii].frequency = intr['@frequency']
-                        self.layer[i].interpretation[ii].species_id = list()
-                        self.layer[i].interpretation[ii].fraction = list()
+                        self.layer[i].interpretation.frequency = intr['@frequency']
+                        self.layer[i].interpretation.species_id = list()
+                        self.layer[i].interpretation.fraction = list()
                         
                         species = intr['species']
                         
                         if type(species)==list: 
                             for spec in species: 
-                                self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
-                                self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                                self.layer[i].interpretation.species_id = np.hstack((self.layer[i].interpretation.species_id,spec['@ID']))
+                                self.layer[i].interpretation.fraction = np.hstack((self.layer[i].interpretation.fraction,spec['@fraction']))
                         else: 
-                            self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
-                            self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
-                        ii+=1
+                            self.layer[i].interpretation.species_id = np.hstack((self.layer[i].interpretation.species_id,species['@ID']))
+                            self.layer[i].interpretation.fraction = np.hstack((self.layer[i].interpretation.fraction,species['@fraction']))
+                                
+                    else: 
+                        
+                        self.layer[i].interpretation = [None]*len(interpretation)
+                        for intr in interpretation: 
+                            #define the one layer as a structure
+                            self.layer[i].interpretation[ii] = structtype()
+                            
+                            #add frequency
+                            self.layer[i].interpretation[ii].frequency = intr['@frequency']
+                            self.layer[i].interpretation[ii].species_id = list()
+                            self.layer[i].interpretation[ii].fraction = list()
+                            
+                            species = intr['species']
+                            
+                            if type(species)==list: 
+                                for spec in species: 
+                                    self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
+                                    self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                            else: 
+                                self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
+                                self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+                            ii+=1
                      
                      
                 #get mask information
@@ -571,7 +637,11 @@ class work_reader (object):
                     
                     
                 self.layer[i].boundaries = structtype()
-                self.layer[i].boundaries.ID =int(lay['@objectNumber'])
+                
+                if lay.get('objectNumber')!=None:
+                    self.layer[i].boundaries.ID =int(lay['@objectNumber'])
+                else: 
+                    self.layer[i].boundaries.ID =None
                 self.layer[i].boundaries.referenceTime = list()
                 
                 
@@ -597,7 +667,7 @@ class work_reader (object):
                     self.layer[i] = structtype()
                     
                     #store the rest species info
-                    self.layer[i].restSpecies = lay['restSpecies']['@ID']
+#                    self.layer[i].restSpecies = lay['restSpecies']['@ID']
                     
                     
                     interpretation = lay['speciesInterpretationRoot']['speciesInterpretationRep']
@@ -605,16 +675,16 @@ class work_reader (object):
                     self.layer[i].interpretation = [None]*len(interpretation)
                     
                     ii = 0
-                    if len(interpretation)==1: 
+                    if type(interpretation)!=list: 
                         #define the one layer as a structure
                         self.layer[i].interpretation[ii] = structtype()
                         
                         #add frequency
-                        self.layer[i].interpretation[ii].frequency = intr['@frequency']
+                        self.layer[i].interpretation[ii].frequency = interpretation['@frequency']
                         self.layer[i].interpretation[ii].species_id = list()
                         self.layer[i].interpretation[ii].fraction = list()
                         
-                        species = intr['species']
+                        species = interpretation['species']
                         
                         if type(species)==list: 
                             for spec in species: 
@@ -630,19 +700,20 @@ class work_reader (object):
                             self.layer[i].interpretation[ii] = structtype()
                             
                             #add frequency
-                            self.layer[i].interpretation[ii].frequency = intr['@frequency']
-                            self.layer[i].interpretation[ii].species_id = list()
-                            self.layer[i].interpretation[ii].fraction = list()
-                            
-                            species = intr['species']
-                            
-                            if type(species)==list: 
-                                for spec in species: 
-                                    self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
-                                    self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
-                            else: 
-                                self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
-                                self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+                            if intr.get('frequency')!= None:
+                                self.layer[i].interpretation[ii].frequency = intr['@frequency']
+                                self.layer[i].interpretation[ii].species_id = list()
+                                self.layer[i].interpretation[ii].fraction = list()
+                                
+                                species = intr['species']
+                                
+                                if type(species)==list: 
+                                    for spec in species: 
+                                        self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
+                                        self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                                else: 
+                                    self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
+                                    self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
                             ii+=1
                          
                          
@@ -653,7 +724,10 @@ class work_reader (object):
                         
                         
                     self.layer[i].boundaries = structtype()
-                    self.layer[i].boundaries.ID =int(lay['@objectNumber'])
+                    if lay.get('objectNumber')!=None:
+                        self.layer[i].boundaries.ID =int(lay['@objectNumber'])
+                    else: 
+                        self.layer[i].boundaries.ID =None
                     self.layer[i].boundaries.referenceTime = list()
                     
                     
@@ -670,9 +744,6 @@ class work_reader (object):
                                 
                     
                     i+=1
-            
-            
-            
             
             
             
@@ -712,6 +783,8 @@ class work_to_annotation(object):
         self.info.timeFirstPing     - integer of the time of first ping given in nanoseconds since 1601
         self.info.ping_time         - list of the time of each ping given in nanoseconds since 1601
         self.info.channel_names     - list containing the name of each channel
+        
+        
         
         self.mask                      - list of datastructures including the interpretation and masks
         self.mask[i]                    - the datastructure of the i'th mask 
@@ -806,11 +879,17 @@ class work_to_annotation(object):
         #If all ping times for each channel is equal, just make one vector
         keep_list= False
         for i in range(1,data.n_channels):
-            if all(ping_time[0]==ping_time[i])==False:
-                keep_list = True
+            if len(ping_time[0])==len(ping_time):
+                if (ping_time[0]==ping_time[i]).all()==False:
+                    keep_list = True
+                    break
+            else: 
+                keep_list=True
                 break
+            
+        keep_list==False
         if keep_list==False: 
-            ping_time=ping_time[0]
+            ping_time=ping_time[1]
         
         channel_ids=data.channel_ids
         
@@ -830,7 +909,22 @@ class work_to_annotation(object):
         self.info.ping_time = ping_time
         self.info.channel_names = list(data.channel_ids)
         
+            
         
+        ####################################################################
+        # Processing the bubble information
+        ####################################################################
+        
+        
+#        self.info.bubble =work.info.bubble
+#            
+#        
+#        bubble = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
+#        self.info.bubble = structtype()
+#        self.info.bubble.start = float(bubble['@start'])
+#        self.info.bubble.numberOfPings = int(bubble['@numberOfPings'])
+#        self.info.bubble.CorrectionValue = float(bubble['@bubbleCorrectionValue'])
+#        
         
         
         ####################################################################
@@ -843,23 +937,24 @@ class work_to_annotation(object):
         ####################################################################
         #Add excluded region
         ####################################################################
-        for i in range(len(work.exclude.start_time)): 
-            self.mask.append(1)
-            mask_i = len(self.mask)-1
-            self.mask[mask_i] = structtype()
-            self.mask[mask_i].region_id = list()
-            self.mask[mask_i].region_name = list()
-            self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'no_data'
-            self.mask[mask_i].region_channels= self.info.channel_names
-            self.mask[mask_i].regions= list()
-            self.mask[mask_i].start_time= UNIXtime_to_epoce(work.exclude.start_time[i])
-            self.mask[mask_i].end_time = self.info.ping_time[np.int(np.where(self.mask[mask_i].start_time==self.info.ping_time)[0])+int(work.exclude.numOfPings[i])-1]
-            self.mask[mask_i].mask_times = self.info.ping_time[((self.info.ping_time>=self.mask[mask_i].start_time) & (self.info.ping_time<=self.mask[mask_i].end_time))]
-            self.mask[mask_i].max_depth = 9999.9
-            self.mask[mask_i].min_depth = 0.0
-            self.mask[mask_i].mask_depth = [[self.mask[mask_i].min_depth,self.mask[mask_i].max_depth] for x in range(len(self.mask[mask_i].mask_times))]
-            self.mask[mask_i].priority = 1
+        if "excluded" in dir(work) == True: 
+            for i in range(len(work.exclude.start_time)): 
+                self.mask.append(1)
+                mask_i = len(self.mask)-1
+                self.mask[mask_i] = structtype()
+                self.mask[mask_i].region_id = list()
+                self.mask[mask_i].region_name = list()
+                self.mask[mask_i].region_provenance= 'LSSS'
+                self.mask[mask_i].region_type= 'no_data'
+                self.mask[mask_i].region_channels= self.info.channel_names
+                self.mask[mask_i].regions= list()
+                self.mask[mask_i].start_time= UNIXtime_to_epoce(work.exclude.start_time[i])
+                self.mask[mask_i].end_time = self.info.ping_time[np.int(np.where(self.mask[mask_i].start_time==self.info.ping_time)[0])+int(work.exclude.numOfPings[i])-1]
+                self.mask[mask_i].mask_times = self.info.ping_time[((self.info.ping_time>=self.mask[mask_i].start_time) & (self.info.ping_time<=self.mask[mask_i].end_time))]
+                self.mask[mask_i].max_depth = 9999.9
+                self.mask[mask_i].min_depth = 0.0
+                self.mask[mask_i].mask_depth = [[self.mask[mask_i].min_depth,self.mask[mask_i].max_depth] for x in range(len(self.mask[mask_i].mask_times))]
+                self.mask[mask_i].priority = 1
 
 
 
@@ -867,23 +962,24 @@ class work_to_annotation(object):
         ####################################################################
         #Add erased region
         ####################################################################
-        for i in range(len(work.erased.masks)):
-            self.mask.append(1)
-            mask_i = len(self.mask)-1
-            self.mask[mask_i] = structtype()
-            self.mask[mask_i].region_id = list()
-            self.mask[mask_i].region_name = list()
-            self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'no_data'
-            self.mask[mask_i].regions= list()
-            self.mask[mask_i].region_channels=self.info.channel_names[work.erased.masks[i].channelID-1]
-            self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
-            self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
-            self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
-            self.mask[mask_i].mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
-            self.mask[mask_i].min_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
-            self.mask[mask_i].max_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
-            self.mask[mask_i].priority = 1
+        if "masks" in dir(work.erased) == True: 
+            for i in range(len(work.erased.masks)):
+                self.mask.append(1)
+                mask_i = len(self.mask)-1
+                self.mask[mask_i] = structtype()
+                self.mask[mask_i].region_id = list()
+                self.mask[mask_i].region_name = list()
+                self.mask[mask_i].region_provenance= 'LSSS'
+                self.mask[mask_i].region_type= 'no_data'
+                self.mask[mask_i].regions= list()
+                self.mask[mask_i].region_channels=self.info.channel_names[work.erased.masks[i].channelID-1]
+                self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
+                self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
+                self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
+                self.mask[mask_i].mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
+                self.mask[mask_i].min_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
+                self.mask[mask_i].max_depth = min([min(d) for d in self.mask[mask_i].mask_depth])
+                self.mask[mask_i].priority = 1
                     
             
             
@@ -928,25 +1024,28 @@ class work_to_annotation(object):
         #Add layer mask
         ####################################################################
         for i in range(len(work.layer)):
-            self.mask.append(1)
-            mask_i = len(self.mask)-1
-            self.mask[mask_i] = structtype()
-            self.mask[mask_i].region_id = list()
-            self.mask[mask_i].region_name = list()
-            self.mask[mask_i].region_provenance= 'LSSS'
-            self.mask[mask_i].region_type= 'analysis'
-            self.mask[mask_i].regions= list()
-#            self.mask[mask_i].region_id = work.school[i].objectNumber
-            self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
-            self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
-            self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
-            self.mask[mask_i].min_depth = min(work.layer[i].boundaries.depths_upper)
-            self.mask[mask_i].max_depth = max(work.layer[i].boundaries.depths_lower)
-            self.mask[mask_i].mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
-            self.mask[mask_i].region_channels=[i for f in work.layer[i].interpretation for i in channel_ids if f.frequency in i]
-            self.mask[mask_i].region_category_ids = [c.species_id for c in work.layer[i].interpretation]
-            self.mask[mask_i].region_category_names = [c.species_id for c in work.layer[i].interpretation]
-            self.mask[mask_i].region_category_proportions = [c.fraction for c in work.layer[i].interpretation]
+            if "boundaries" in dir(work.layer[i]):
+                self.mask.append(1)
+                mask_i = len(self.mask)-1
+                self.mask[mask_i] = structtype()
+                self.mask[mask_i].region_id = list()
+                self.mask[mask_i].region_name = list()
+                self.mask[mask_i].region_provenance= 'LSSS'
+                self.mask[mask_i].region_type= 'analysis'
+                self.mask[mask_i].regions= list()
+    #            self.mask[mask_i].region_id = work.school[i].objectNumber
+                self.mask[mask_i].mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+                self.mask[mask_i].start_time = self.mask[mask_i].mask_times[0]
+                self.mask[mask_i].end_time = self.mask[mask_i].mask_times[-1]
+                self.mask[mask_i].min_depth = min(work.layer[i].boundaries.depths_upper)
+                self.mask[mask_i].max_depth = max(work.layer[i].boundaries.depths_lower)
+                self.mask[mask_i].mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
+                if "interpretation" in dir(work.layer[i]):
+                    if "frequency" in dir(work.layer[i].interpretation):
+                        self.mask[mask_i].region_channels=[i for f in work.layer[i].interpretation for i in channel_ids if f.frequency in i]
+                        self.mask[mask_i].region_category_ids = [c.species_id for c in work.layer[i].interpretation]
+                        self.mask[mask_i].region_category_names = [c.species_id for c in work.layer[i].interpretation]
+                        self.mask[mask_i].region_category_proportions = [c.fraction for c in work.layer[i].interpretation]
 #            self.mask[mask_i].region_channels=[list(data.get_channel_data().keys()).index(ip)  for i.p in list(data.get_channel_data().keys()) if work.layer[i].interpretation.frequency in ip]
                 
             self.mask[mask_i].priority = 3
