@@ -224,7 +224,7 @@ class work_reader (object):
                 
                 
                 #Check if there is erased mask on one or several channels
-                if len(doc['regionInterpretation']['masking']['mask'])==1:
+                if type(doc['regionInterpretation']['masking'])!=list:
                     
                     #Grab the mask info
                     mask = doc['regionInterpretation']['masking']['mask']
@@ -236,7 +236,7 @@ class work_reader (object):
                     self.erased.masks[i].depth =list()
                     
                     #recognize if it is only for one ping, then fill inn info
-                    if len(mask['ping']) ==1: 
+                    if type(mask['ping']) !=list: 
                         ping = mask['ping']
                         self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
                         self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
@@ -257,7 +257,7 @@ class work_reader (object):
                         
                         
                         #recognize if it is only for one ping, then fill inn info
-                        if len(mask['ping']) ==1: 
+                        if type(mask['ping']) !=list: 
                             ping = mask['ping']
                             self.erased.masks[i].pingOffset = np.hstack((self.erased.masks[i].pingOffset,int(ping['@pingOffset'])))
                             self.erased.masks[i].depth = np.hstack((self.erased.masks[i].depth,[ping['#text']]))
