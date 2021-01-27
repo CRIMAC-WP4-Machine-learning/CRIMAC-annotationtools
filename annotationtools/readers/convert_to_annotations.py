@@ -803,7 +803,6 @@ class work_to_annotation(object):
         self.mask[i].mask_depth         - list of paired depths
     
         
-    TODO: make the raw reader more general so it can handle between EK80 and EK60 data
         
     """
     
@@ -877,20 +876,23 @@ class work_to_annotation(object):
 
 
         #If all ping times for each channel is equal, just make one vector
-        keep_list= False
+#        keep_list= False
+        p_time = []
         for i in range(1,data.n_channels):
-            if len(ping_time[0])==len(ping_time):
-                if (ping_time[0]==ping_time[i]).all()==False:
-                    keep_list = True
-                    break
-            else: 
-                keep_list=True
-                break
+            p_time = np.hstack((p_time,ping_time[i]))
+#            if len(ping_time[0])==len(ping_time):
+#                if (ping_time[0]==ping_time[i]).all()==False:
+#                    keep_list = True
+#                    break
+#            else: 
+#                keep_list=True
+#                break
             
-        keep_list==False
-        if keep_list==False: 
-            ping_time=ping_time[1]
-        
+#        keep_list==False
+#        if keep_list==False: 
+#            ping_time=ping_time[1]
+#        
+        ping_time = np.sort(np.unique(p_time))
         channel_ids=data.channel_ids
         
         
