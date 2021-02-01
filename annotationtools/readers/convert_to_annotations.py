@@ -210,7 +210,7 @@ class work_reader (object):
             #If so proceed
             
             #Fill in info of the time of first erased pixel
-            self.erased.referenceTime = float(doc['regionInterpretation']['masking']['@referenceTime'])
+#            self.erased.referenceTime = float(doc['regionInterpretation']['masking']['@referenceTime'])
             
             
             #Check if there is mask information
@@ -285,7 +285,9 @@ class work_reader (object):
 
             #Check if this is one ore several schools
             if type(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep'])!=list: 
+                
                 self.school = [None]
+                
                 #grab school info
                 schools = doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
                 
@@ -346,16 +348,23 @@ class work_reader (object):
                 else: 
                     #If no information is avaliable, output that this has no data
                     self.school[i].interpretations = structtype()
-                    self.school[i].interpretations.frequency = 'No data'
-                    self.school[i].interpretations.species_id = 'No data'
-                    self.school[i].interpretations.fraction = 'No data'
+                    self.school[i].interpretations.frequency = -1
+                    self.school[i].interpretations.species_id = -1
+                    self.school[i].interpretations.fraction = -1
                          
                         
                 #Print the interpretation mask of each school
                 self.school[i].relativePingNumber=list()
                 self.school[i].min_depth = list()
                 self.school[i].max_depth = list()
-                for ping in schools['pingMask']: 
+                if type(schools['pingMask'])==list:
+                    for ping in schools['pingMask']: 
+                        self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
+                        depth = ping['#text'].split()
+                        self.school[i].min_depth = np.hstack((self.school[i].min_depth,float(depth[0])))
+                        self.school[i].max_depth = np.hstack((self.school[i].max_depth,float(depth[1])))     
+                else: 
+                    ping = schools['pingMask']
                     self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
                     depth = ping['#text'].split()
                     self.school[i].min_depth = np.hstack((self.school[i].min_depth,float(depth[0])))
@@ -368,9 +377,10 @@ class work_reader (object):
                 #Define the size of the list
                 self.school = [None] * len(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep'])
                 for schools in doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']: 
+                    
                     #Define the school as a structure and fill in infoo
                     self.school[i] = structtype()
-                    self.school[i].referenceTime = float(schools['@referenceTime'])
+#                    self.school[i].referenceTime = float(schools['@referenceTime'])
                     self.school[i].objectNumber = int(schools['@objectNumber'])
                     
                     
@@ -389,16 +399,22 @@ class work_reader (object):
                             intr = interpretation
                             self.school[i].interpretations[ii]=structtype()
                             self.school[i].interpretations[ii].frequency = intr['@frequency']
-                            species = intr['species']
-                            species_id = list()
-                            fraction = list()
-                            if type(species)==list: 
-                                for s in species: 
-                                    species_id = np.hstack((species_id,s['@ID']))
-                                    fraction = np.hstack((fraction,s['@fraction']))
+                            
+                            if 'species' in dir(intr): 
+                                species = intr['species']
+                                species_id = list()
+                                fraction = list()
+                                if type(species)==list: 
+                                    for s in species: 
+                                        species_id = np.hstack((species_id,s['@ID']))
+                                        fraction = np.hstack((fraction,s['@fraction']))
+                                else: 
+                                    species_id = np.hstack((species_id,species['@ID']))
+                                    fraction = np.hstack((fraction,species['@fraction']))
                             else: 
-                                species_id = np.hstack((species_id,species['@ID']))
-                                fraction = np.hstack((fraction,species['@fraction']))
+                                
+                                species_id = -1
+                                fraction = -1
                                 
                             self.school[i].interpretations[ii].species_id=species_id
                             self.school[i].interpretations[ii].fraction=fraction
@@ -423,9 +439,9 @@ class work_reader (object):
                                 ii=ii+1
                     else: 
                         self.school[i].interpretations = structtype()
-                        self.school[i].interpretations.frequency = 'No data'
-                        self.school[i].interpretations.species_id = 'No data'
-                        self.school[i].interpretations.fraction = 'No data'
+                        self.school[i].interpretations.frequency = -1
+                        self.school[i].interpretations.species_id = -1
+                        self.school[i].interpretations.fraction = -1
                              
                             
                     #Print the interpretation mask of each school
@@ -553,17 +569,32 @@ class work_reader (object):
             
             #grab the layer definitions
             boundaries_definitions=layer_info['boundaries']['curveBoundary']
+            
+            connect_id =structtype()
+            connect_id.id = []
+            connect_id.pingOffset = []
+            for ids in layer_info['connectors']['connector']:
+                connect_id.id =np.hstack((connect_id.id,int(ids['@id'])))
+                connect_id.pingOffset =np.hstack((connect_id.pingOffset,int(ids['connectorRep']['@pingOffset'])))
+            
             bound_keep = [None] * len(boundaries_definitions)
             i=0
             for bound in boundaries_definitions: 
                 bound_keep[i] = structtype()
                 bound_keep[i].id = int(bound['@id'])
-                bound_keep[i].referenceTime = np.float(bound['curveRep']['pingRange']['@referenceTime'])
-                bound_keep[i].startPing = int(bound['curveRep']['pingRange']['@startOffset'])
-                bound_keep[i].numberOfPings= int(bound['curveRep']['pingRange']['@numberOfPings'])
+                startConnector = int(bound['@startConnector'])
+                endConnector = int(bound['@endConnector'])
+                
+                
+#                bound_keep[i].referenceTime = np.float(bound['curveRep']['pingRange']['@referenceTime'])
+                bound_keep[i].startPing = np.int(connect_id.pingOffset[connect_id.id==startConnector])#int(bound['curveRep']['pingRange']['@startOffset'])
+                bound_keep[i].numberOfPings= np.int(connect_id.pingOffset[connect_id.id==endConnector])-np.int(connect_id.pingOffset[connect_id.id==startConnector]) #int(bound['curveRep']['pingRange']['@numberOfPings'])
                 depths = bound['curveRep']['depths']
                 depths= depths.replace('\n',' ').split()
                 bound_keep[i].depths = [float(i) for i in depths]
+                if not (len(bound_keep[i].depths)) == (bound_keep[i].numberOfPings): 
+                    print('check boundries')
+                    asdf
                 i+=1
             
             
@@ -592,7 +623,7 @@ class work_reader (object):
                     
                     
                     ii = 0
-                    if len(interpretation)==1: 
+                    if type(interpretation)!=list: 
                         #define the one layer as a structure
                         self.layer[i].interpretation = structtype()
                         
@@ -611,8 +642,8 @@ class work_reader (object):
                                     self.layer[i].interpretation.species_id = np.hstack((self.layer[i].interpretation.species_id,species['@ID']))
                                     self.layer[i].interpretation.fraction = np.hstack((self.layer[i].interpretation.fraction,species['@fraction']))
                         else: 
-                            self.layer[i].interpretation.species_id = np.hstack((self.layer[i].interpretation.species_id,'No Data'))
-                            self.layer[i].interpretation.fraction = np.hstack((self.layer[i].interpretation.fraction,'No Data'))
+                            self.layer[i].interpretation.species_id = np.hstack((self.layer[i].interpretation.species_id,-1))
+                            self.layer[i].interpretation.fraction = np.hstack((self.layer[i].interpretation.fraction,-1))
                             
                                 
                     else: 
@@ -695,8 +726,7 @@ class work_reader (object):
                             self.layer[i].interpretation[ii].frequency = interpretation['@frequency']
                             self.layer[i].interpretation[ii].species_id = list()
                             self.layer[i].interpretation[ii].fraction = list()
-                            
-                            if "species" in dir(interpretation): 
+                            if interpretation.get('species') != None: 
                                 species = interpretation['species']
                                 
                                 if type(species)==list: 
@@ -707,8 +737,8 @@ class work_reader (object):
                                     self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
                                     self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
                             else: 
-                                self.layer[i].interpretation[ii].species_id = 'No Data'
-                                self.layer[i].interpretation[ii].fraction = 'No Data'
+                                self.layer[i].interpretation[ii].species_id = -1
+                                self.layer[i].interpretation[ii].fraction = -1
                                     
                         else: 
                             for intr in interpretation: 
@@ -721,19 +751,25 @@ class work_reader (object):
                                     self.layer[i].interpretation[ii].species_id = list()
                                     self.layer[i].interpretation[ii].fraction = list()
                                     
-                                    species = intr['species']
                                     
-                                    if type(species)==list: 
-                                        for spec in species: 
-                                            self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
-                                            self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                                    if intr.get('species')!= None : 
+                                        species = intr['species']
+                                        if type(species)==list: 
+                                            for spec in species: 
+                                                self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
+                                                self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                                        else: 
+                                            self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
+                                            self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
                                     else: 
-                                        self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
-                                        self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+                                        self.layer[i].interpretation[ii].frequency = -1 
+                                        self.layer[i].interpretation[ii].species_id = -1 
+                                        self.layer[i].interpretation[ii].fraction = -1 
+                                    
                                 else: 
-                                    self.layer[i].interpretation[ii].frequency = 'No Data' 
-                                    self.layer[i].interpretation[ii].species_id = 'No Data' 
-                                    self.layer[i].interpretation[ii].fraction = 'No Data' 
+                                    self.layer[i].interpretation[ii].frequency = -1 
+                                    self.layer[i].interpretation[ii].species_id = -1 
+                                    self.layer[i].interpretation[ii].fraction = -1 
                                 ii+=1
                              
                          
@@ -1224,18 +1260,26 @@ class work_to_annotation (object):
             
         
         
+        
+        
+        
         ####################################################################
         #Add school mask
         ####################################################################
         if 'school' in dir(work):
             for i in range(len(work.school)):     
-                print(i)
                 mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
                 mask_times = [ping_time[int(p)-1] for p in work.school[i].relativePingNumber]
                 if type(work.school[i].interpretations)==list:
-                    region_channels=np.unique([ip for f in work.school[i].interpretations for ip in channel_ids if f.frequency in ip])
-                    region_category_names = [(c.species_id) for c in work.school[i].interpretations]
-                    region_category_proportions = [(c.fraction) for c in work.school[i].interpretations]
+                    for intr in work.school[i].interpretations:
+                        if 'frequency' in dir(intr):
+                            region_channels=[i for i in channel_ids if intr.frequency in i] 
+                            region_category_names = intr.species_id#[(c.species_id) for c in intr]
+                            region_category_proportions = intr.fraction# [(c.fraction) for c in intr]
+                        else: 
+                            region_channels=-1
+                            region_category_names = -1
+                            region_category_proportions = -1
                 else: 
                     region_channels = work.school[i].interpretations.frequency
                     region_category_names=work.school[i].interpretations.species_id
@@ -1244,41 +1288,65 @@ class work_to_annotation (object):
                     m_depth = np.array(mask_depth[ii])
                     m_depth=m_depth.reshape(-1,2)
                     for iii in range(m_depth.shape[0]):
-                        i_chn = 0       
                         if type(region_channels)!=np.ndarray:
                             chn = region_channels
-                            if chn == 'No data':
+                            if type(chn) != int: 
+                                chn = chn[0]
+                            if chn == -1 or chn == -1:
                                 pingTime.append(mask_times[ii])
                                 mask_depth_upper.append(min(m_depth[iii,:]))
                                 mask_depth_lower.append(max(m_depth[iii,:]))
                                 priority.append(2)
-                                acousticCat.append('No data')
-                                proportion.append('No data')
-                                ChannelID.append('No data')
-                                ID.append('No data')
+                                acousticCat.append(-1)
+                                proportion.append(-1)
+                                ChannelID.append(-1)
+                                ID.append('School-'+str(work.school[i].objectNumber))
                             else:
-                                for a in zip(region_category_names[i_chn],region_category_proportions[i_chn]): 
-                                    pingTime.append(mask_times[ii])
-                                    mask_depth_upper.append(min(m_depth[iii,:]))
-                                    mask_depth_lower.append(max(m_depth[iii,:]))
-                                    priority.append(2)
-                                    acousticCat.append(a[0])
-                                    proportion.append(a[1])
-                                    ChannelID.append(chn)
-                                    ID.append(work.school[i].objectNumber)
+                                if region_category_names == -1: 
+                                        pingTime.append(mask_times[ii])
+                                        mask_depth_upper.append(min(m_depth[iii,:]))
+                                        mask_depth_lower.append(max(m_depth[iii,:]))
+                                        priority.append(2)
+                                        acousticCat.append(region_category_names)
+                                        proportion.append(region_category_proportions)
+                                        ChannelID.append(chn)
+                                        ID.append('School-'+str(work.school[i].objectNumber))
+                                    
+                                else: 
+                                    for i_chn in np.arange(len(region_category_names)):
+                                        pingTime.append(mask_times[ii])
+                                        mask_depth_upper.append(min(m_depth[iii,:]))
+                                        mask_depth_lower.append(max(m_depth[iii,:]))
+                                        priority.append(2)
+                                        acousticCat.append(region_category_names[i_chn])
+                                        proportion.append(region_category_proportions[i_chn])
+                                        ChannelID.append(chn)
+                                        ID.append('School-'+str(work.school[i].objectNumber))
                         else:
                             for chn in region_channels: 
-                                print(chn)
-                                for a in zip(region_category_names[i_chn],region_category_proportions[i_chn]): 
-                                    pingTime.append(mask_times[ii])
-                                    mask_depth_upper.append(min(m_depth[iii,:]))
-                                    mask_depth_lower.append(max(m_depth[iii,:]))
-                                    priority.append(2)
-                                    acousticCat.append(a[0])
-                                    proportion.append(a[1])
-                                    ChannelID.append(chn)
-                                    ID.append(work.school[i].objectNumber)
-                                i_chn+=1
+#                                for a in zip(region_category_names[i_chn],region_category_proportions[i_chn]): 
+                                
+                                if region_category_names == -1: 
+                                        pingTime.append(mask_times[ii])
+                                        mask_depth_upper.append(min(m_depth[iii,:]))
+                                        mask_depth_lower.append(max(m_depth[iii,:]))
+                                        priority.append(2)
+                                        acousticCat.append(region_category_names)
+                                        proportion.append(region_category_proportions)
+                                        ChannelID.append(chn)
+                                        ID.append('School-'+str(work.school[i].objectNumber))
+                                    
+                                else: 
+                                    for i_chn in np.arange(len(region_category_names)):
+                                        pingTime.append(mask_times[ii])
+                                        mask_depth_upper.append(min(m_depth[iii,:]))
+                                        mask_depth_lower.append(max(m_depth[iii,:]))
+                                        priority.append(2)
+                                        acousticCat.append(region_category_names[i_chn])
+                                        proportion.append(region_category_proportions[i_chn])
+                                        ChannelID.append(chn)
+                                        ID.append('School-'+str(work.school[i].objectNumber))
+#                                i_chn+=1
                     
                     
                         
@@ -1293,74 +1361,110 @@ class work_to_annotation (object):
                 if "boundaries" in dir(work.layer[i]):
                     mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
                     mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+                    
+                    
+                    region_channels = []
+                    region_channels_id = []
+                    region_category_names = []
+                    region_category_proportions = []
+                    reg_chn_idx=0
                     if "interpretation" in dir(work.layer[i]):
                         if type(work.layer[i].interpretation) == list: 
                             for intr in work.layer[i].interpretation: 
                                 if "frequency" in dir(intr):
-                                    region_channels=[i for i in channel_ids if intr.frequency in i] 
-                                    region_category_names=intr.species_id
-                                    region_category_proportions = intr.fraction
+                                    if intr.frequency!= -1:
+                                        region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i][0]))
+                                        region_category_names=np.hstack((region_category_names,intr.species_id))
+                                        region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
+                                        if type(intr.fraction)== float:
+                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,1)))
+                                        elif type(intr.fraction)== int: 
+                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,1)))
+                                        else:
+                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
+                                        reg_chn_idx+=1
+                                    else: 
+                                        region_channels = np.hstack((region_channels,-1))
+                                        region_category_names=np.hstack((region_category_names,-1))
+                                        region_category_proportions = np.hstack((region_category_proportions,-1))
+                                        region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+                                        reg_chn_idx+=1
                                 else: 
-                                    region_channels = 'No data'
-                                    region_category_names='No data'
-                                    region_category_proportions = 'No data'
+                                    region_channels = np.hstack((region_channels,-1))
+                                    region_category_names=np.hstack((region_category_names,-1))
+                                    region_category_proportions = np.hstack((region_category_proportions,-1))
+                                    region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+                                    reg_chn_idx+=1
+                        else: 
+                            intr=work.layer[i].interpretation
+                            if "frequency" in dir(intr):
+                                region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i] ))
+                                region_category_names=np.hstack((region_category_names,intr.species_id))
+                                region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
+                                region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
+                                reg_chn_idx+=1
+                            else: 
+                                region_channels = np.hstack((region_channels,-1))
+                                region_category_names=np.hstack((region_category_names,-1))
+                                region_category_proportions = np.hstack((region_category_proportions,-1))
+                                region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+                                reg_chn_idx+=1
                     else:
-                        region_channels = 'No data'
-                        region_category_names='No data'
-                        region_category_proportions = 'No data'
-
+                        region_channels = np.hstack((region_channels,-1))
+                        region_category_names=np.hstack((region_category_names,-1))
+                        region_category_proportions = np.hstack((region_category_proportions,-1))
+                        region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+                        reg_chn_idx+=1
 
                             
                     for ii in range(len(mask_depth)): 
                         m_depth = np.array(mask_depth[ii])
                         m_depth=m_depth.reshape(-1,2)
                         for iii in range(m_depth.shape[0]):
-                            i_chn = 0        
-                            if len(region_channels)!=1: 
-                                print(region_channels)
-                                asdfdsf
-                            else: 
-                                chn = region_channels[0]
-                                
-                                for ikk in range(len(region_category_names)): 
+                            for ik in range(len(region_channels)): 
+#                                if (region_category_names[ik] == '12'): 
+#                                    asdf
+                                for ikk in np.where(region_channels_id==ik)[0]:
                                     pingTime.append(mask_times[ii])
                                     mask_depth_upper.append(min(m_depth[iii,:]))
                                     mask_depth_lower.append(max(m_depth[iii,:]))
                                     priority.append(3)
-                                    acousticCat.append(region_category_names[ikk])
-                                    proportion.append(region_category_proportions[ikk])
-                                    ChannelID.append(chn)
-                                    ID.append('Layer' + str(i))
+                                    ID.append('Layer-' + str(i))
+                                    acousticCat.append(int(region_category_names[ikk]))
+                                    proportion.append(float(region_category_proportions[ikk]))
+                                    ChannelID.append(region_channels[ik])
                                 
-#                            if type(region_channels)!=list:
-#                                chn = region_channels
-#                                for a in zip(region_category_names[i_chn],region_category_proportions[i_chn]): 
+                            
+#                            if len(region_channels)!=1: 
+#                                if region_channels == -1:
 #                                    pingTime.append(mask_times[ii])
 #                                    mask_depth_upper.append(min(m_depth[iii,:]))
 #                                    mask_depth_lower.append(max(m_depth[iii,:]))
 #                                    priority.append(3)
-#                                    acousticCat.append(a[0])
-#                                    proportion.append(a[1])
-#                                    ChannelID.append(chn)
+#                                    acousticCat.append(-1)
+#                                    proportion.append(-1)
+#                                    ChannelID.append(-1)
 #                                    ID.append('Layer' + str(i))
-#                            else:
-#                                for chn in region_channels: 
-#                                    print(region_category_names)
-##                                    for a in zip(region_category_names[i_chn],region_category_proportions[i_chn]): 
+#                                    
+#                                else: 
+#                                    print(region_channels)
+#                                    asdfdsf
+#                            else: 
+#                                chn = region_channels[0]
+#                                
+#                                for ikk in range(len(region_category_names)): 
 #                                    pingTime.append(mask_times[ii])
 #                                    mask_depth_upper.append(min(m_depth[iii,:]))
 #                                    mask_depth_lower.append(max(m_depth[iii,:]))
 #                                    priority.append(3)
-#                                    acousticCat.append(a[0])
-#                                    proportion.append(a[1])
+#                                    acousticCat.append(region_category_names[ikk])
+#                                    proportion.append(region_category_proportions[ikk])
 #                                    ChannelID.append(chn)
 #                                    ID.append('Layer' + str(i))
-#                                    i_chn+=1
-#                    
-                    
-                    
+                                
 
                         
+        #remove priorites
          
          
         self.df_ = pd.DataFrame(data={'pingTime':pingTime,
