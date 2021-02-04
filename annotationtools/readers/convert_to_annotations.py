@@ -183,7 +183,7 @@ class work_reader (object):
             
             
             #Check if there is more than one excluded region and fill inn data
-            if len(doc['regionInterpretation']['exclusionRanges'])==1:
+            if type(doc['regionInterpretation']['exclusionRanges']['timeRange'])!=list:
                 timeRange = doc['regionInterpretation']['exclusionRanges']['timeRange']
                 numOfPings = int(timeRange['@numberOfPings'])
                 start_time = float(timeRange['@start'])
@@ -294,7 +294,10 @@ class work_reader (object):
                 #Define the school as a structure and fill in info
                 self.school[i] = structtype()
                 self.school[i].referenceTime = float(schools['@referenceTime'])
-                self.school[i].objectNumber = int(schools['@objectNumber'])
+                if schools.get('@objectNumber')!=None:
+                    self.school[i].objectNumber = int(schools['@objectNumber'])
+                else: 
+                    self.school[i].objectNumber = -1
                 
                 
                 #Check if there has been any interpretation made
@@ -449,10 +452,13 @@ class work_reader (object):
                     self.school[i].min_depth = list()
                     self.school[i].max_depth = list()
                     for ping in schools['pingMask']: 
-                        self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
                         depth = ping['#text'].split()
-                        self.school[i].min_depth = np.hstack((self.school[i].min_depth,float(depth[0])))
-                        self.school[i].max_depth = np.hstack((self.school[i].max_depth,float(depth[1])))     
+                        min_depth=depth[0::2]
+                        max_depth=depth[1::2]
+                        for d in range(len(min_depth)):
+                            self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
+                            self.school[i].min_depth = np.hstack((self.school[i].min_depth,min_depth[d]))
+                            self.school[i].max_depth = np.hstack((self.school[i].max_depth,max_depth[d]))     
                     i=i+1
                 
                 
@@ -594,7 +600,7 @@ class work_reader (object):
                 bound_keep[i].depths = [float(i) for i in depths]
                 if not (len(bound_keep[i].depths)) == (bound_keep[i].numberOfPings): 
                     print('check boundries')
-                    asdf
+#                    asdf
                 i+=1
             
             
@@ -1151,10 +1157,16 @@ class work_to_annotation (object):
                 return ek60_obj
                     
             
-            
+        SEC_TO_UNIX_EPOCH = (datetime(1970, 1, 1) - datetime(1601, 1, 1)).total_seconds() 
+        WINDOWS_TICK_INTERVAL  = 1e-9
+        
+        def dt_from_ft(ft):
+            return datetime.utcfromtimestamp(int(ft) * WINDOWS_TICK_INTERVAL - SEC_TO_UNIX_EPOCH)
+
         def UNIXtime_to_epoce(timestamp):
             '''Helper function to convert time stamps in work file to epoc since 1601'''
-            return((datetime.fromtimestamp(timestamp) - datetime(1601, 1, 1)).total_seconds()*1e9)
+            timestamp = (datetime.utcfromtimestamp(timestamp) - datetime(1601, 1, 1)).total_seconds()*1e9
+            return(timestamp)
             
             
             
@@ -1171,7 +1183,7 @@ class work_to_annotation (object):
         ping_time = [None] * data.n_channels
         for i in range(data.n_channels):
             p_time = data.get_channel_data(channel_numbers=i+1)[i+1][0].ping_time
-            ping_time[i] = np.array([(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in p_time])
+            ping_time[i] = np.array([(datetime.utcfromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in p_time])
         
         
         #If all ping times for each channel is equal, just make one vector
@@ -1180,12 +1192,6 @@ class work_to_annotation (object):
         for i in range(1,data.n_channels):
             p_time = np.hstack((p_time,ping_time[i]))
         
-         
-         
-         
-         
-         
-         
         
         ping_time = np.sort(np.unique(p_time))
         channel_ids=data.channel_ids
@@ -1210,14 +1216,14 @@ class work_to_annotation (object):
                     end_time= ping_time[np.int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
                     
                     for p in ping_time[(ping_time>=start_time) & (ping_time<=end_time)]:
-                        pingTime.append(p)
+                        pingTime.append(dt_from_ft(p).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                         mask_depth_upper.append(0.0)
                         mask_depth_lower.append(9999.9)
                         priority.append(1)
                         acousticCat.append(0)
                         proportion.append(1.0)
                         ChannelID.append(chn)
-                        ID.append('exclude')
+                        ID.append('exclude-'+str(i))
         
         
         
@@ -1239,7 +1245,7 @@ class work_to_annotation (object):
                             for iii in range(m_depth.shape[0]):
                                     
                                 if type(work.erased.masks[i].channelID)==int:
-                                    pingTime.append(mask_times[ii])
+                                    pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                                     mask_depth_upper.append(min(m_depth[iii,:]))
                                     mask_depth_lower.append(max(m_depth[iii,:]))
                                     priority.append(1)
@@ -1249,7 +1255,7 @@ class work_to_annotation (object):
                                     ID.append('erased')
                                 else:
                                     for chn in channel_ids[work.erased.masks[i].channelID-1]: 
-                                        pingTime.append(mask_times[ii])
+                                        pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                                         mask_depth_upper.append(min(m_depth[iii,:]))
                                         mask_depth_lower.append(max(m_depth[iii,:]))
                                         priority.append(1)
@@ -1271,29 +1277,42 @@ class work_to_annotation (object):
                 mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
                 mask_times = [ping_time[int(p)-1] for p in work.school[i].relativePingNumber]
                 if type(work.school[i].interpretations)==list:
+                    region_channels=[]
+                    region_category_names=[]
+                    region_category_proportions=[]
                     for intr in work.school[i].interpretations:
                         if 'frequency' in dir(intr):
-                            region_channels=[i for i in channel_ids if intr.frequency in i] 
-                            region_category_names = intr.species_id#[(c.species_id) for c in intr]
-                            region_category_proportions = intr.fraction# [(c.fraction) for c in intr]
+                            if not intr.species_id == -1:
+                                region_category_names = np.hstack((region_category_names,intr.species_id))#[(c.species_id) for c in intr]
+                                region_category_proportions = np.hstack((region_category_proportions,intr.fraction))# [(c.fraction) for c in intr]
+                                region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i]*len(intr.fraction)))
+                            else: 
+                                region_channels=np.hstack((region_channels,-1))
+                                region_category_names = np.hstack((region_category_names, -1))
+                                region_category_proportions = np.hstack((region_category_proportions,-1))
+                                
                         else: 
-                            region_channels=-1
-                            region_category_names = -1
-                            region_category_proportions = -1
+                            region_channels=np.hstack((region_channels,-1))
+                            region_category_names = np.hstack((region_category_names, -1))
+                            region_category_proportions = np.hstack((region_category_proportions,-1))
+                            
                 else: 
                     region_channels = work.school[i].interpretations.frequency
                     region_category_names=work.school[i].interpretations.species_id
                     region_category_proportions = work.school[i].interpretations.fraction
+                    
+                    
                 for ii in range(len(mask_times)): 
                     m_depth = np.array(mask_depth[ii])
                     m_depth=m_depth.reshape(-1,2)
                     for iii in range(m_depth.shape[0]):
+                        
                         if type(region_channels)!=np.ndarray:
                             chn = region_channels
                             if type(chn) != int: 
                                 chn = chn[0]
                             if chn == -1 or chn == -1:
-                                pingTime.append(mask_times[ii])
+                                pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                                 mask_depth_upper.append(min(m_depth[iii,:]))
                                 mask_depth_lower.append(max(m_depth[iii,:]))
                                 priority.append(2)
@@ -1303,7 +1322,7 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                             else:
                                 if region_category_names == -1: 
-                                        pingTime.append(mask_times[ii])
+                                        pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                                         mask_depth_upper.append(min(m_depth[iii,:]))
                                         mask_depth_lower.append(max(m_depth[iii,:]))
                                         priority.append(2)
@@ -1314,7 +1333,7 @@ class work_to_annotation (object):
                                     
                                 else: 
                                     for i_chn in np.arange(len(region_category_names)):
-                                        pingTime.append(mask_times[ii])
+                                        pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                                         mask_depth_upper.append(min(m_depth[iii,:]))
                                         mask_depth_lower.append(max(m_depth[iii,:]))
                                         priority.append(2)
@@ -1323,29 +1342,15 @@ class work_to_annotation (object):
                                         ChannelID.append(chn)
                                         ID.append('School-'+str(work.school[i].objectNumber))
                         else:
-                            for chn in region_channels: 
-#                                for a in zip(region_category_names[i_chn],region_category_proportions[i_chn]): 
-                                
-                                if region_category_names == -1: 
-                                        pingTime.append(mask_times[ii])
-                                        mask_depth_upper.append(min(m_depth[iii,:]))
-                                        mask_depth_lower.append(max(m_depth[iii,:]))
-                                        priority.append(2)
-                                        acousticCat.append(region_category_names)
-                                        proportion.append(region_category_proportions)
-                                        ChannelID.append(chn)
-                                        ID.append('School-'+str(work.school[i].objectNumber))
-                                    
-                                else: 
-                                    for i_chn in np.arange(len(region_category_names)):
-                                        pingTime.append(mask_times[ii])
-                                        mask_depth_upper.append(min(m_depth[iii,:]))
-                                        mask_depth_lower.append(max(m_depth[iii,:]))
-                                        priority.append(2)
-                                        acousticCat.append(region_category_names[i_chn])
-                                        proportion.append(region_category_proportions[i_chn])
-                                        ChannelID.append(chn)
-                                        ID.append('School-'+str(work.school[i].objectNumber))
+                            for ikk in range(len(region_channels)): 
+                                pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
+                                mask_depth_upper.append(min(m_depth[iii,:]))
+                                mask_depth_lower.append(max(m_depth[iii,:]))
+                                priority.append(2)
+                                acousticCat.append(region_category_names[ikk])
+                                proportion.append(region_category_proportions[ikk])
+                                ChannelID.append(region_channels[ikk])
+                                ID.append('School-'+str(work.school[i].objectNumber))
 #                                i_chn+=1
                     
                     
@@ -1425,7 +1430,7 @@ class work_to_annotation (object):
 #                                if (region_category_names[ik] == '12'): 
 #                                    asdf
                                 for ikk in np.where(region_channels_id==ik)[0]:
-                                    pingTime.append(mask_times[ii])
+                                    pingTime.append(dt_from_ft(mask_times[ii]).strftime('%Y-%m-%d %H:%M:%S.%f')+'000')
                                     mask_depth_upper.append(min(m_depth[iii,:]))
                                     mask_depth_lower.append(max(m_depth[iii,:]))
                                     priority.append(3)
