@@ -6,11 +6,17 @@ Created on Mon Jan  4 08:46:06 2021
 """
 
 from decimal import Decimal
-from echolab2.instruments import EK60, EK80
+import pandas as pd
+from pytz import utc as pytz_utc
 from datetime import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import numpy as np
+import os, struct
+from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
+from echolab2.instruments.util.simrad_raw_file import RawSimradFile
+
+
 
 class annotation_to_work (object):
 
@@ -18,31 +24,10 @@ class annotation_to_work (object):
 
 
 
+
+
+
     def __init__(self,filename='',raw_filename='',annotation=[]):
-        
-            # Detect FileType
-        def ek_detect(fname):
-            with open(fname, 'rb') as f:
-                file_header = f.read(8)
-                file_magic = file_header[-4:]
-                if file_magic.startswith(b'XML'):
-                    return "EK80"
-                elif file_magic.startswith(b'CON'):
-                    return "EK60"
-                else:
-                    return None
-            
-            
-        def ek_read(fname):
-            if ek_detect(fname) == "EK80":
-                ek80_obj = EK80.EK80()
-                ek80_obj.read_raw(fname)
-                return ek80_obj
-            elif ek_detect(fname) == "EK60":
-                ek60_obj = EK60.EK60()
-                ek60_obj.read_raw(fname)
-                return ek60_obj
-                    
             
         
         
@@ -57,61 +42,67 @@ class annotation_to_work (object):
             return(' '.join(dp))
     
         
-        def epoce_to_UNIXtime(timestamp):
-            '''Helper function to convert epoc time to Work
-            
-            For some reason we need to add 1 houre!!!
-            '''
-            timestamp1=(float(timestamp/1e9+(datetime(1601, 1, 1)-datetime(1970, 1, 1,1,0)).total_seconds()))
-            return(timestamp)
-            
-            
-            
-            
-            
-        #Read ek data    
-        raw_data = ek_read(raw_filename)
-        
-        #make a list of the different ping times per channel
-        #It may be different between each channel if they are pinging sequentually
-        ping_time = [None] * raw_data.n_channels
-        for i in range(raw_data.n_channels):
-            p_time = raw_data.get_channel_data(channel_numbers=i+1)[i+1][0].ping_time
-            ping_time[i] = np.array([time for time in p_time])#np.array([(datetime.fromtimestamp(time.astype('uint64')/1000)- datetime(1601, 1, 1)).total_seconds()*1e9 for time in p_time])
         
         
-        #If all ping times for each channel is equal, just make one vector
-        #        keep_list= False
-        p_time = []
-        for i in range(1,raw_data.n_channels):
-            p_time = np.hstack((p_time,ping_time[i]))
+        # =============================================================================
+        # Handle the file info and store the data  
+        # =============================================================================
+        in_files=raw_filename
+        pre, ext = os.path.splitext(in_files)
+        in_files=pre+'.idx'
+        
+        fid = RawSimradFile(in_files, 'r')
+        config = fid.read(1)
+        run = True
+        ping_time_IDX = list()
+        ping_time = list()
+        while run == True:
+            try: 
+                idx_datagram = fid.read(1)
+                raw_string=struct.unpack('4sLLLdddLL', idx_datagram)
+                p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
+                ping_time_IDX.append(round(p_time,3))
+                ping_time.append((unix_to_datetime(round(p_time,3)).replace(tzinfo=None)))
+                
+            except:
+                run = False
+        IDX_info = pd.DataFrame(data={'ping_time':ping_time,
+                                 'ping_time_IDX':ping_time_IDX})
+     
         
         
-        ping_time = np.sort(np.unique(p_time))
-        channel_ids=raw_data.channel_ids
-        frequency = [int(x/1000) for x in list(raw_data.frequency_map)]
-         
-        
-            
-        ping_time= np.sort(np.unique(annotation.pingTime))
+        # =============================================================================
+        # Get channel info
+        # =============================================================================
+        channel_ids=list(config['configuration'].keys())#data.channel_ids
+        frequency=[(int(config['configuration'][p]['frequency']/1000)) for p in config['configuration'].keys()]
         
         
         
-        # create the file structure
+        
+        # =============================================================================
+        # Start making the file structure
+        # =============================================================================
         data = ET.Element('regionInterpretation')
         data.set('version','1.0')
         
         
-        #Set the first line where we describe the time of first ping and 
-        #number of pings in file
+        
+        
+        # =============================================================================
+        # add first line of the work file, for some reason we need to add one houre!!!
+        # =============================================================================
+        times_=(min(annotation.pingTime)-np.datetime64(datetime(1970, 1, 1, 1, 0, 0, tzinfo=pytz_utc).replace(tzinfo=None))).total_seconds()
         timeRange = ET.SubElement(data, 'timeRange')
-        timeRange.set('start',str('%.12E' % Decimal(epoce_to_UNIXtime(min(annotation.pingTime)))))
+        timeRange.set('start',str('%.12E' % Decimal(times_)))
         timeRange.set('numberOfPings',str(len(np.unique(annotation.pingTime))))
         
         
         
         
-        #write the information of mask per channel
+        # =============================================================================
+        # Process the exclude mask
+        # =============================================================================
         masking = ET.SubElement(data, 'masking')
         excludedData = annotation[annotation.acousticCat==0]
         channel_ids = list(set(excludedData.ChannelID))
@@ -121,12 +112,10 @@ class annotation_to_work (object):
             mask = ET.SubElement(masking, 'mask')
             channel_ids.index(chn)
             mask.set('channelID',str(1+channel_ids.index(chn)))
-            
-            for p_time in np.sort(np.unique(sub_excludedData.pingTime)): 
-                
+            for p_time in sorted(set(sub_excludedData.pingTime)): 
                 ping = ET.SubElement(mask, 'ping')
-                
-                ping.set('pingOffset',str(list(ping_time).index(p_time)))
+                p_idx = np.where(IDX_info.ping_time==p_time)[0][0]
+                ping.set('pingOffset',str(p_idx))
                 sub_data = sub_excludedData[sub_excludedData.pingTime == p_time]
                 if sub_data.shape[0]==1: 
                     inn_mask = list([str(float(sub_data.mask_depth_upper)),str(float(sub_data.mask_depth_lower-sub_data.mask_depth_upper))])
@@ -145,10 +134,9 @@ class annotation_to_work (object):
                     
                     
         ###################################################################   
-        #LAYER           
+        # Process the layer stuff           
         ###################################################################
         s_layer_data = annotation[annotation.priority==3]
-        
         layerInterpretation = ET.SubElement(data, 'layerInterpretation')   
         boundaries = ET.SubElement(layerInterpretation, 'boundaries')   
         connectors = ET.SubElement(layerInterpretation, 'connectors')  
@@ -200,27 +188,27 @@ class annotation_to_work (object):
             connector = ET.SubElement(connectors, 'connector')     
             connector.set('id',str(connector_id-4))    
             connectorRep = ET.SubElement(connector, 'connectorRep') 
-            connectorRep.set('pingOffset',str(np.where(ping_time == min(layer_data.pingTime))[0][0]))    
+            connectorRep.set('pingOffset',str(np.where(IDX_info.ping_time == min(layer_data.pingTime))[0][0]))    
             connectorRep.set('depth',str(max(layer_data[layer_data.pingTime == min(layer_data.pingTime)].mask_depth_upper)))    
                
             
             connector = ET.SubElement(connectors, 'connector')     
             connector.set('id',str(connector_id-3))    
             connectorRep = ET.SubElement(connector, 'connectorRep') 
-            connectorRep.set('pingOffset',str(np.where(ping_time == max(layer_data.pingTime))[0][0]+1))    
+            connectorRep.set('pingOffset',str(np.where(IDX_info.ping_time == max(layer_data.pingTime))[0][0]+1))    
             connectorRep.set('depth',str(max(layer_data[layer_data.pingTime == max(layer_data.pingTime)].mask_depth_upper)))   
             
             
             connector = ET.SubElement(connectors, 'connector')     
             connector.set('id',str(connector_id-2))    
             connectorRep = ET.SubElement(connector, 'connectorRep') 
-            connectorRep.set('pingOffset',str(np.where(ping_time == min(layer_data.pingTime))[0][0]))    
+            connectorRep.set('pingOffset',str(np.where(IDX_info.ping_time == min(layer_data.pingTime))[0][0]))    
             connectorRep.set('depth',str(max(layer_data[layer_data.pingTime == min(layer_data.pingTime)].mask_depth_lower)))   
             
             connector = ET.SubElement(connectors, 'connector')     
             connector.set('id',str(connector_id-1))    
             connectorRep = ET.SubElement(connector, 'connectorRep') 
-            connectorRep.set('pingOffset',str(np.where(ping_time == max(layer_data.pingTime))[0][0]+1))    
+            connectorRep.set('pingOffset',str(np.where(IDX_info.ping_time == max(layer_data.pingTime))[0][0]+1))    
             connectorRep.set('depth',str(max(layer_data[layer_data.pingTime == max(layer_data.pingTime)].mask_depth_lower)))   
             
             layer_data[['proportion','ChannelID','acousticCat']].drop_duplicates()
@@ -234,7 +222,7 @@ class annotation_to_work (object):
             
             inter = layer_data[['proportion','ChannelID','acousticCat']].drop_duplicates()
             
-            frequency = [int(x/1000) for x in list(raw_data.frequency_map)]
+#            frequency = [int(x/1000) for x in list(raw_data.frequency_map)]
             
             for chn in set(inter.ChannelID): 
                 dix =channel_ids.index(chn)
@@ -286,14 +274,16 @@ class annotation_to_work (object):
             s_id
             school_data=s_school_data[s_school_data.ID==s_id] 
             school = ET.SubElement(schoolInterpretation,'schoolMaskRep')
-            school.set('referenceTime',str('%.12E' % Decimal(epoce_to_UNIXtime(list(school_data.pingTime)[0]))))
+            
+            times_=(min(school_data.pingTime)-np.datetime64(datetime(1970, 1, 1, 0, 0, 0, tzinfo=pytz_utc).replace(tzinfo=None))).total_seconds()
+            school.set('referenceTime',str('%.12E' % Decimal(times_)))
             school.set('hasBeenVisisted','true')
             school.set('objectNumber',str(s_count))
             
             spintroot = ET.SubElement(school,'speciesInterpretationRoot')
             
             inter = school_data[['proportion','ChannelID','acousticCat']].drop_duplicates()
-            frequency = [int(x/1000) for x in list(raw_data.frequency_map)]
+#            frequency = [int(x/1000) for x in list(raw_data.frequency_map)]
             chnid = list(set(inter.ChannelID))
             chnid.sort()
             for chn in chnid: 
@@ -311,10 +301,11 @@ class annotation_to_work (object):
             p_times = list(set(school_data.pingTime))
             p_times.sort()
             for p in p_times: 
-                ping_idx=int(np.where(ping_time==p)[0][0]+1)
+                ping_idx=int(np.where(IDX_info.ping_time==p)[0][0]+1)
                 sub = school_data[school_data.pingTime==p]
                 tmp = list(list(sub.mask_depth_upper)+list(sub.mask_depth_lower))
                 tmp.sort()
+                tmp = [str(t) for t in tmp]
                 pingMask = ET.SubElement(school,'pingMask')
                 pingMask.set('relativePingNumber',str(ping_idx))
                 pingMask.text = ' '.join(tmp)
