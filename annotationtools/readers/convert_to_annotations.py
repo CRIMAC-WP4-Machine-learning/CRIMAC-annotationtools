@@ -427,16 +427,20 @@ class work_reader (object):
                             for intr in interpretation: 
                                 self.school[i].interpretations[ii]=structtype()
                                 self.school[i].interpretations[ii].frequency = intr['@frequency']
-                                species = intr['species']
-                                species_id = list()
-                                fraction = list()
-                                if type(species)==list: 
-                                    for s in species: 
-                                        species_id = np.hstack((species_id,s['@ID']))
-                                        fraction = np.hstack((fraction,s['@fraction']))
+                                if 'species' in dir (intr): 
+                                    species = intr['species']
+                                    species_id = list()
+                                    fraction = list()
+                                    if type(species)==list: 
+                                        for s in species: 
+                                            species_id = np.hstack((species_id,s['@ID']))
+                                            fraction = np.hstack((fraction,s['@fraction']))
+                                    else: 
+                                        species_id = np.hstack((species_id,species['@ID']))
+                                        fraction = np.hstack((fraction,species['@fraction']))
                                 else: 
-                                    species_id = np.hstack((species_id,species['@ID']))
-                                    fraction = np.hstack((fraction,species['@fraction']))
+                                    species_id = -1
+                                    fraction = -1
                                 self.school[i].interpretations[ii].species_id=species_id
                                 self.school[i].interpretations[ii].fraction=fraction
                                 

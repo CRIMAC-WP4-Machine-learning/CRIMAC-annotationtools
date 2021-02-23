@@ -143,6 +143,7 @@ class annotation_to_work (object):
         layerDefinitions = ET.SubElement(layerInterpretation, 'layerDefinitions') 
         bound_id = 0
         connector_id = 0
+        channel_ids=list(config['configuration'].keys())#data.channel_ids
         for id_s in set(s_layer_data.ID):
                 
             layer_data=s_layer_data[s_layer_data.ID==id_s]
@@ -225,14 +226,16 @@ class annotation_to_work (object):
 #            frequency = [int(x/1000) for x in list(raw_data.frequency_map)]
             
             for chn in set(inter.ChannelID): 
-                dix =channel_ids.index(chn)
-                speciesInterpretationRep = ET.SubElement(speciesInterpretationRoot, 'speciesInterpretationRep') 
-                speciesInterpretationRep.set('frequency',str(frequency[dix]))
-#                
-                for index,row in inter[inter.ChannelID==chn].iterrows():
-                    species= ET.SubElement(speciesInterpretationRep, 'species') 
-                    species.set('ID',str(row.acousticCat))
-                    species.set('fraction',str(row.proportion))
+                if not chn=='-1':
+                    if not chn == -1:
+                        dix =channel_ids.index(chn)
+                        speciesInterpretationRep = ET.SubElement(speciesInterpretationRoot, 'speciesInterpretationRep') 
+                        speciesInterpretationRep.set('frequency',str(frequency[dix]))
+        #                
+                        for index,row in inter[inter.ChannelID==chn].iterrows():
+                            species= ET.SubElement(speciesInterpretationRep, 'species') 
+                            species.set('ID',str(row.acousticCat))
+                            species.set('fraction',str(row.proportion))
             
             
             
@@ -270,6 +273,7 @@ class annotation_to_work (object):
         
         s_school_data = annotation[annotation.priority==2]
         s_count = 1
+        channel_ids=list(config['configuration'].keys())#data.channel_ids
         for s_id in set(s_school_data.ID): 
             s_id
             school_data=s_school_data[s_school_data.ID==s_id] 
@@ -288,16 +292,16 @@ class annotation_to_work (object):
             chnid.sort()
             for chn in chnid: 
                 if chn != -1:
-                    tmp = inter[inter.ChannelID == chn]
+                    if chn != '-1': 
+                        tmp = inter[inter.ChannelID == chn]
+                        
+                        interpRep = ET.SubElement(spintroot,'speciesInterpretationRep')
+                        interpRep.set('frequency',str(frequency[channel_ids.index(chn)]))
+                        for index,row in tmp.iterrows():
+                            species = ET.SubElement(interpRep,'species')
+                            species.set('ID',str(row.acousticCat))
+                            species.set('fraction',str(row.proportion))
                     
-                    interpRep = ET.SubElement(spintroot,'speciesInterpretationRep')
-                    interpRep.set('frequency',str(frequency[channel_ids.index(chn)]))
-                    for index,row in tmp.iterrows():
-                        print(row)
-                        species = ET.SubElement(interpRep,'species')
-                        species.set('ID',str(row.acousticCat))
-                        species.set('fraction',str(row.proportion))
-                
             p_times = list(set(school_data.pingTime))
             p_times.sort()
             for p in p_times: 
