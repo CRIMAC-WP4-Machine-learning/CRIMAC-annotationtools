@@ -1189,7 +1189,7 @@ class work_to_annotation (object):
                     start_time= (work.exclude.start_time[i])
                     end_time= ping_time[np.int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
                     for p in ping_time[(ping_time>=start_time) & (ping_time<=end_time)]:
-                        pingTime.append(unix_to_datetime(p).replace(tzinfo=None))
+                        pingTime.append(np.datetime64(unix_to_datetime(p)))
                         mask_depth_upper.append(0.0)
                         mask_depth_lower.append(9999.9)
                         priority.append(1)
@@ -1215,7 +1215,7 @@ class work_to_annotation (object):
                             m_depth=m_depth.reshape(-1,2)
                             for iii in range(m_depth.shape[0]):
                                 if type(work.erased.masks[i].channelID)==int:
-                                    pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                    pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                     mask_depth_upper.append(min(m_depth[iii,:]))
                                     mask_depth_lower.append(max(m_depth[iii,:]))
                                     priority.append(1)
@@ -1225,7 +1225,7 @@ class work_to_annotation (object):
                                     ID.append('erased')
                                 else:
                                     for chn in channel_ids[work.erased.masks[i].channelID-1]: 
-                                        pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                        pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                         mask_depth_upper.append(min(m_depth[iii,:]))
                                         mask_depth_lower.append(max(m_depth[iii,:]))
                                         priority.append(1)
@@ -1282,7 +1282,7 @@ class work_to_annotation (object):
                             if type(chn) != int: 
                                 chn = chn[0]
                             if chn == -1 or chn == -1:
-                                pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                 mask_depth_upper.append(float(min(m_depth[iii,:])))
                                 mask_depth_lower.append(float(max(m_depth[iii,:])))
                                 priority.append(2)
@@ -1292,7 +1292,7 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                             else:
                                 if region_category_names == -1: 
-                                        pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                        pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                         mask_depth_upper.append(float(min(m_depth[iii,:])))
                                         mask_depth_lower.append(float(max(m_depth[iii,:])))
                                         priority.append(2)
@@ -1303,7 +1303,7 @@ class work_to_annotation (object):
                                     
                                 else: 
                                     for i_chn in np.arange(len(region_category_names)):
-                                        pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                        pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                         mask_depth_upper.append(float(min(m_depth[iii,:])))
                                         mask_depth_lower.append(float(max(m_depth[iii,:])))
                                         priority.append(2)
@@ -1313,7 +1313,7 @@ class work_to_annotation (object):
                                         ID.append('School-'+str(work.school[i].objectNumber))
                         else:
                             for ikk in range(len(region_channels)): 
-                                pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                 mask_depth_upper.append(float(min(m_depth[iii,:])))
                                 mask_depth_lower.append(float(max(m_depth[iii,:])))
                                 priority.append(2)
@@ -1397,7 +1397,7 @@ class work_to_annotation (object):
                         for iii in range(m_depth.shape[0]):
                             for ik in range(len(region_channels)): 
                                 for ikk in np.where(region_channels_id==ik)[0]:
-                                    pingTime.append(unix_to_datetime(mask_times[ii]).replace(tzinfo=None))
+                                    pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                     mask_depth_upper.append(min(m_depth[iii,:]))
                                     mask_depth_lower.append(max(m_depth[iii,:]))
                                     priority.append(3)
