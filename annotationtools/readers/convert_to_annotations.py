@@ -1155,7 +1155,7 @@ class work_to_annotation (object):
         while run == True:
             try: 
                 idx_datagram = fid.read(1)
-                raw_string=struct.unpack('4sLLLdddLL', idx_datagram)
+                raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)
                 p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
                 ping_time_IDX.append(round(p_time,3))
                 
