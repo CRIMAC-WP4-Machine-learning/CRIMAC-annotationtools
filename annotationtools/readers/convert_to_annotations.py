@@ -838,6 +838,7 @@ class work_reader (object):
 #    Input: 
 #        work:               fthe internal work structure defined in work_reader
 #        raw_filename:       file name or file path of a .raw file
+#        correct_time:       correct the time differences between raw and work file (can be slow). Default to False.
 #        
 #    Output: 
 #        Tree/list structure for storing the interpretation masks in annotation format
@@ -1125,10 +1126,38 @@ class work_reader (object):
 class work_to_annotation (object):
         
     
-    def __init__(self,work,raw_filename = ''): 
+    def __init__(self,work,raw_filename = '', correct_time = False):
         
-        
-        
+
+        # Detect FileType
+        def ek_detect(fname):
+            with open(fname, 'rb') as f:
+                file_header = f.read(8)
+                file_magic = file_header[-4:]
+                if file_magic.startswith(b'XML'):
+                    return "EK80"
+                elif file_magic.startswith(b'CON'):
+                    return "EK60"
+                else:
+                    return None
+
+        def ek_read(fname):
+            if ek_detect(fname) == "EK80":
+                ek80_obj = EK80.EK80()
+                ek80_obj.read_raw(fname)
+                return ek80_obj
+            elif ek_detect(fname) == "EK60":
+                ek60_obj = EK60.EK60()
+                ek60_obj.read_raw(fname)
+                return ek60_obj
+
+        def gettimediff(work, raw_filename):
+            ek_obj = ek_read(raw_filename)
+            work_time = np.datetime64(unix_to_datetime(work.info.timeFirstPing))
+            raw_time = ek_obj.start_time
+            return (work_time - raw_time)
+
+
         def depthConverter(depth): 
             #Helper function to convert the LSSS depth notation to more general
             depth = depth.split(' ')
@@ -1410,7 +1439,16 @@ class work_to_annotation (object):
         # =============================================================================
         # Add output as a dataframe
         # =============================================================================
-        self.df_= pd.DataFrame(data={'pingTime':pingTime,
+
+        if correct_time:
+            time_diff = gettimediff(work, raw_filename)
+            correct_time = np.hstack(pingTime) - time_diff
+            self.raw_work_timediff = time_diff
+        else:
+            correct_time = np.hstack(pingTime)
+            self.raw_work_timediff = 0
+
+        self.df_= pd.DataFrame(data={'pingTime': correct_time,
                                  'mask_depth_upper':mask_depth_upper,
                                  'mask_depth_lower':mask_depth_lower,
                                  'priority':priority,
