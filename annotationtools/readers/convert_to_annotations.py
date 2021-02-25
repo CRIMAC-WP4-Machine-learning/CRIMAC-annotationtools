@@ -1410,17 +1410,21 @@ class work_to_annotation (object):
         # Add output as a dataframe
         # =============================================================================
 
-        if correct_time:
-            correct_time = np.hstack(pingTime) - time_diff
-        else:
-            correct_time = np.hstack(pingTime)
+        if len(pingTime) > 0:
+            if correct_time:
+                correct_time = np.hstack(pingTime) - time_diff
+                print("Correcting time by " + str(time_diff))
+            else:
+                correct_time = np.hstack(pingTime)
 
-        self.df_= pd.DataFrame(data={'pingTime': correct_time,
-                                 'mask_depth_upper':mask_depth_upper,
-                                 'mask_depth_lower':mask_depth_lower,
-                                 'priority':priority,
-                                 'acousticCat':acousticCat,
-                                 'proportion':proportion,
-                                 'ID':ID,
-                                 'ChannelID':ChannelID})
+            self.df_= pd.DataFrame(data={'pingTime': correct_time,
+                                    'mask_depth_upper':mask_depth_upper,
+                                    'mask_depth_lower':mask_depth_lower,
+                                    'priority':priority,
+                                    'acousticCat':acousticCat,
+                                    'proportion':proportion,
+                                    'ID':ID,
+                                    'ChannelID':ChannelID})
+        else:
+            self.df_ = None
      
