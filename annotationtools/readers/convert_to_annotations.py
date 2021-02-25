@@ -836,8 +836,8 @@ class work_reader (object):
 #    
 #    
 #    Input: 
-#        work:               fthe internal work structure defined in work_reader
-#        raw_filename:       file name or file path of a .raw file
+#        work:               the internal work structure defined in work_reader
+#        index_file:         file name or file path of a .idx file
 #        correct_time:       correct the time differences between raw and work file (for debugging). Default to True.
 #        
 #    Output: 
@@ -1126,7 +1126,7 @@ class work_reader (object):
 class work_to_annotation (object):
         
     
-    def __init__(self,work,raw_filename = '', correct_time = True):
+    def __init__(self, work, index_file, correct_time = True):
 
         def depthConverter(depth): 
             #Helper function to convert the LSSS depth notation to more general
@@ -1140,12 +1140,9 @@ class work_to_annotation (object):
             return(depth)
 
         # Get some info from the index file
-        in_files=raw_filename
-        pre, ext = os.path.splitext(in_files)
-        in_files=pre+'.idx'
 
         #Read the ping times
-        fid = RawSimradFile(in_files, 'r')
+        fid = RawSimradFile(index_file, 'r')
         config = fid.read(1)
         channel_ids = list(config['configuration'].keys())#data.channel_ids
         timestamp = config['timestamp'].timestamp()
