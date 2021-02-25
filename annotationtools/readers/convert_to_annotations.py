@@ -669,15 +669,17 @@ class work_reader (object):
                             self.layer[i].interpretation[ii].species_id = list()
                             self.layer[i].interpretation[ii].fraction = list()
                             
-                            species = intr['species']
-                            
-                            if type(species)==list: 
-                                for spec in species: 
-                                    self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
-                                    self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
-                            else: 
-                                self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
-                                self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+                            if 'species' in intr:
+                                species = intr['species']
+
+                                if type(species)==list:
+                                    for spec in species:
+                                        self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,spec['@ID']))
+                                        self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,spec['@fraction']))
+                                else:
+                                    self.layer[i].interpretation[ii].species_id = np.hstack((self.layer[i].interpretation[ii].species_id,species['@ID']))
+                                    self.layer[i].interpretation[ii].fraction = np.hstack((self.layer[i].interpretation[ii].fraction,species['@fraction']))
+
                             ii+=1
                      
                      
