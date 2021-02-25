@@ -9,7 +9,7 @@ from echolab2.instruments import EK60, EK80
 import pandas as pd
 from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
 from echolab2.instruments.util.simrad_raw_file import RawSimradFile
-
+import decimal
 
 
 class work_reader (object):
@@ -1141,6 +1141,9 @@ class work_to_annotation (object):
                 
             return(depth)
 
+        # Use round towards zero
+        decimal.getcontext().rounding = decimal.ROUND_DOWN
+
         # Get some info from the index file
 
         #Read the ping times
@@ -1156,12 +1159,12 @@ class work_to_annotation (object):
                 idx_datagram = fid.read(1)
                 raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)
                 p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
-                ping_time_IDX.append(p_time)
+                ping_time_IDX.append(float(round(decimal.Decimal(p_time), 3)))
             except:
                 run = False
 
         ping_time = np.array(ping_time_IDX)
-        time_diff = np.datetime64(unix_to_datetime(ping_time[0])) - np.datetime64(unix_to_datetime(timestamp))
+        time_diff = np.datetime64(unix_to_datetime(ping_time[0])) - np.datetime64(unix_to_datetime(float(round(decimal.Decimal(timestamp), 3))))
         self.raw_work_timediff = time_diff
 
         #For bookkeeping
