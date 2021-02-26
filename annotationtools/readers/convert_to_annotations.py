@@ -1417,7 +1417,7 @@ class work_to_annotation (object):
             else:
                 correct_time = np.hstack(pingTime)
 
-            self.df_= pd.DataFrame(data={'pingTime': correct_time,
+            df = pd.DataFrame(data={'pingTime': correct_time,
                                     'mask_depth_upper':mask_depth_upper,
                                     'mask_depth_lower':mask_depth_lower,
                                     'priority':priority,
@@ -1425,6 +1425,9 @@ class work_to_annotation (object):
                                     'proportion':proportion,
                                     'ID':ID,
                                     'ChannelID':ChannelID})
+
+            # Convert if necessary
+            self.df_ = df.astype({'acousticCat': 'int64', 'proportion': 'float64', 'ID': 'string', 'ChannelID': 'string'})
         else:
             self.df_ = None
      
