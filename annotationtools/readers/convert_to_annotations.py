@@ -1417,17 +1417,24 @@ class work_to_annotation (object):
             else:
                 correct_time = np.hstack(pingTime)
 
-            df = pd.DataFrame(data={'pingTime': correct_time,
+            df = pd.DataFrame(data={'ping_time': correct_time,
                                     'mask_depth_upper':mask_depth_upper,
                                     'mask_depth_lower':mask_depth_lower,
                                     'priority':priority,
-                                    'acousticCat':acousticCat,
+                                    'acoustic_category':acousticCat,
                                     'proportion':proportion,
-                                    'ID':ID,
-                                    'ChannelID':ChannelID})
+                                    'object_id':ID,
+                                    'channel_id':ChannelID})
 
             # Convert if necessary
-            self.df_ = df.astype({'acousticCat': 'int64', 'proportion': 'float64', 'ID': 'string', 'ChannelID': 'string'})
+            self.df_ = df.astype({'ping_time': 'datetime64[ns]',
+                                    'mask_depth_upper': 'float64',
+                                    'mask_depth_lower': 'float64',
+                                    'priority': 'int64',
+                                    'acoustic_category': 'string',
+                                    'proportion': 'float64',
+                                    'object_id': 'string',
+                                    'channel_id': 'string'})
         else:
             self.df_ = None
      
