@@ -12,6 +12,47 @@ from echolab2.instruments.util.simrad_raw_file import RawSimradFile
 import decimal
 
 
+
+class rename_LSSS_vocab_to_ICES_vocab (object):
+    """
+    function to rename vocabulary for LSSS acoustic category to ices vocab
+    
+    Usage: 
+        annotation :    pandas data tableas reported from work_to_annotation
+        link:           dictionary for user specific definition, i.e. {12:'HER'}
+        reference_file: download reference file from IMR web portal. NOT AVALIABLE!!!
+        set_UKN:        set to True to convert all non specified acoustic category to ices unknown 'UKN' 
+    """
+    def __init__(self,annotation = None, link=None,reference_file=False,set_UKN=False): 
+            
+        if link==None and reference_file == False: 
+            print('Either link or refrence_file must be specified')
+            return
+        
+        
+        if link==None and reference_file != False: 
+            print('A reference file is not yet avaliable')
+            return
+        
+        if link!=None: 
+            #Change acousticCat for noise to 'D10'
+            annotation['acoustic_category'][(annotation['acoustic_category']=='0.0') | (annotation['acoustic_category']=='0')]='D10'
+            
+            
+            #Change acousticCat for missing data to NA
+            annotation['acoustic_category'][(annotation['acoustic_category']=='-1.0') | (annotation['acoustic_category']=='-1')]='NAN'
+            
+            #Convert all other fields as specified from link table
+            for link_i in link: 
+                annotation['acoustic_category'][(annotation['acoustic_category']==link_i) | (annotation['acoustic_category']==link_i+'.0')] = link[link_i]
+                
+            if set_UKN == True: 
+                annotation['acoustic_category'][[item not in ['D10','NAN']+list(link.values())  for item in annotation['acoustic_category']]]='UKN'
+        
+        self.annotation = annotation
+
+
+
 class work_reader (object):
 
     """Function for reading the LSSS .work files including the interpretation 
@@ -1431,10 +1472,10 @@ class work_to_annotation (object):
                                     'mask_depth_upper': 'float64',
                                     'mask_depth_lower': 'float64',
                                     'priority': 'int64',
-                                    'acoustic_category': 'string',
+                                    'acoustic_category': str,
                                     'proportion': 'float64',
-                                    'object_id': 'string',
-                                    'channel_id': 'string'})
+                                    'object_id': str,
+                                    'channel_id': str})
         else:
             self.df_ = None
      
