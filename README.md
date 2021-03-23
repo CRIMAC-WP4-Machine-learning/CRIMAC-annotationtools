@@ -13,12 +13,10 @@ Based on discussions 06.01.2021 we should probably plan for two different repres
 
 ## Functions
 ### Readers:
-- work_to_annotations - LSSSmaskReader - reads annotations from LSSS work files
+- work_to_annotations - LSSSmaskReader - reads annotations from LSSS work files and info from Simrad raw files (such as ping time)
 - ev_to_annotations - reads annotations from Echoviev .ev files
 - icesnc_to_annotations - reads annotations from the ICES annotation format
 
-### Other functions:
-- pingtimereader - reads a .raw file to obtain a ping/time mapping (this is missing from LSSS masks)
 
 ### Writers:
 - annotations_to_nc - Writes the ICES acoustic annotation format in necdf 
