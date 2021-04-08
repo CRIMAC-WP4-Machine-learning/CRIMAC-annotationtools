@@ -11,12 +11,23 @@ A python variable structure for annotations (based on dict?) that is a one to on
 
 Based on discussions 06.01.2021 we should probably plan for two different representations. One that is aligned with the data grid, and one that defines the edges of the box that is independent of the data grid. For the first the time vector of the data is needed.
 
+### Annotation grid
+1:1 correspondence to the gridded data.
+
+### Ping-range based annotations
+Similar to the ICES standard. Independent of the grid.
+
 ## Functions
+
+### converters:
+- annotation_to_grid - (The grid has to be sparse)
+- grid_to_annotation(par=thr) - Turn the pixel based grid into the annotation table. First the data is thresholded, then the neighbouring pixels needs to be connected to a "school", then the connected pixels are written as one object to the annotation table.
+
 ### Readers:
+- zarrgrid_to_grid - zarrgrid is undefined.
 - work_to_annotations - LSSSmaskReader - reads annotations from LSSS work files and info from Simrad raw files (such as ping time)
 - ev_to_annotations - reads annotations from Echoviev .ev files
 - icesnc_to_annotations - reads annotations from the ICES annotation format
-
 
 ### Writers:
 - annotations_to_nc - Writes the ICES acoustic annotation format in necdf 
