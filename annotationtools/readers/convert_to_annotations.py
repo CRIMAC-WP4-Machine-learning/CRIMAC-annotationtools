@@ -10,6 +10,7 @@ import pandas as pd
 from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
 from echolab2.instruments.util.simrad_raw_file import RawSimradFile
 import decimal
+from skimage import measure
 
 
 
@@ -445,7 +446,7 @@ class work_reader (object):
                             self.school[i].interpretations[ii]=structtype()
                             self.school[i].interpretations[ii].frequency = intr['@frequency']
                             
-                            if 'species' in dir(intr): 
+                            if 'species' in intr.keys(): 
                                 species = intr['species']
                                 species_id = list()
                                 fraction = list()
@@ -457,7 +458,6 @@ class work_reader (object):
                                     species_id = np.hstack((species_id,species['@ID']))
                                     fraction = np.hstack((fraction,species['@fraction']))
                             else: 
-                                
                                 species_id = -1
                                 fraction = -1
                                 
@@ -468,7 +468,7 @@ class work_reader (object):
                             for intr in interpretation: 
                                 self.school[i].interpretations[ii]=structtype()
                                 self.school[i].interpretations[ii].frequency = intr['@frequency']
-                                if 'species' in dir (intr): 
+                                if 'species' in intr.keys(): 
                                     species = intr['species']
                                     species_id = list()
                                     fraction = list()
@@ -476,12 +476,15 @@ class work_reader (object):
                                         for s in species: 
                                             species_id = np.hstack((species_id,s['@ID']))
                                             fraction = np.hstack((fraction,s['@fraction']))
+#                                            print('11111')
                                     else: 
                                         species_id = np.hstack((species_id,species['@ID']))
                                         fraction = np.hstack((fraction,species['@fraction']))
                                 else: 
+#                                    print('asdfadf')
                                     species_id = -1
                                     fraction = -1
+                                    
                                 self.school[i].interpretations[ii].species_id=species_id
                                 self.school[i].interpretations[ii].fraction=fraction
                                 
@@ -517,21 +520,22 @@ class work_reader (object):
         ####################################################################
         # Processing the Buble correction information
         ####################################################################
-        if type(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])!=list: 
-            bubble = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
-            self.info.bubble = structtype()
-            self.info.bubble.start = float(bubble['@start'])
-            self.info.bubble.numberOfPings = int(bubble['@numberOfPings'])
-            self.info.bubble.CorrectionValue = float(bubble['@bubbleCorrectionValue'])
-        else: 
-            self.info.bubble = [None] * len(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])
-            i_buble = 0
-            for bubble in doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']: 
-                self.info.bubble[i_buble] = structtype()
-                self.info.bubble[i_buble].start = float(bubble['@start'])
-                self.info.bubble[i_buble].numberOfPings = int(bubble['@numberOfPings'])
-                self.info.bubble[i_buble].CorrectionValue = float(bubble['@bubbleCorrectionValue'])
-                i_buble+=1
+        if 'bubbleCorrectionRanges'in doc['regionInterpretation'].keys():
+            if type(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])!=list: 
+                bubble = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
+                self.info.bubble = structtype()
+                self.info.bubble.start = float(bubble['@start'])
+                self.info.bubble.numberOfPings = int(bubble['@numberOfPings'])
+                self.info.bubble.CorrectionValue = float(bubble['@bubbleCorrectionValue'])
+            else: 
+                self.info.bubble = [None] * len(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])
+                i_buble = 0
+                for bubble in doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']: 
+                    self.info.bubble[i_buble] = structtype()
+                    self.info.bubble[i_buble].start = float(bubble['@start'])
+                    self.info.bubble[i_buble].numberOfPings = int(bubble['@numberOfPings'])
+                    self.info.bubble[i_buble].CorrectionValue = float(bubble['@bubbleCorrectionValue'])
+                    i_buble+=1
              
             
              
@@ -1385,7 +1389,7 @@ class work_to_annotation (object):
                     if "interpretation" in dir(work.layer[i]):
                         if type(work.layer[i].interpretation) == list: 
                             for intr in work.layer[i].interpretation: 
-                                if "frequency" in dir(intr):
+                                if ("frequency" in dir(intr)) and (intr.species_id != []):
                                     if intr.frequency!= -1:
                                         region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i][0]))
                                         region_category_names=np.hstack((region_category_names,intr.species_id))
@@ -1479,3 +1483,94 @@ class work_to_annotation (object):
         else:
             self.df_ = None
      
+        
+        
+
+class grid_to_annotation (object):
+        
+    """Function for reading prediction output and regread
+    
+    Author: 
+        Sindre Vatnehol
+        Institue of Marine Research
+        mail: sindre.vatnehol@hi.no
+    
+    
+    Input: 
+        z_obj:  a zarr object as specified from ????
+        TH:     a threshold parameter for when a prediction should be labeled to a selected species
+        target_category : specify which target should be outputed to annotation
+        school_id: id of the first school box
+        chn_id: channel id
+        
+   """
+        
+    
+    def __init__(self,z_obj=None,TH = 1,target_category=None,school_id=1,chn_id='value'):
+
+        
+        #For bookkeeping
+        correct_time=[]
+        mask_depth_upper=[]
+        mask_depth_lower=[]
+        priority=[]
+        acousticCat=[]
+        proportion=[]
+        ID=[]
+        ChannelID=[]
+        
+        #group stuff
+        tmp = np.matrix(z_obj[target_category])
+        tmp[tmp>=TH]=1
+        tmp[tmp<TH]=0
+        all_labels = measure.label(tmp)
+    
+    
+        #go through each grp
+        for one_label in np.unique(all_labels)[1:]: 
+            
+            #Grab the zar object of the selected species
+            #TODO: a fix is needed for adding multiple categories
+            z_obj_label = z_obj[target_category][np.where(all_labels == one_label)]
+            
+            
+            #Loop through each time interval
+            for t in np.sort(np.unique(z_obj_label['ping_time'])):
+                
+                #Get depth information per ping
+                depths = z_obj_label['range'][np.array(z_obj_label['ping_time']==t)]
+                
+                #Store data
+                correct_time.append(t)
+                mask_depth_lower.append(np.min(np.array(depths)))
+                mask_depth_upper.append(np.max(np.array(depths)))
+                priority.append(2)
+                acousticCat.append(target_category)
+                proportion.append(1)
+                ID.append('school_'+str(school_id))
+                ChannelID.append(chn_id)
+            school_id+=1
+                
+            
+        #Make a dataframe 
+        df = pd.DataFrame(data={'ping_time': correct_time,
+                                'mask_depth_upper':mask_depth_upper,
+                                'mask_depth_lower':mask_depth_lower,
+                                'priority':priority,
+                                'acoustic_category':acousticCat,
+                                'proportion':proportion,
+                                'object_id':ID,
+                                'channel_id':ChannelID})
+
+        #Fix naming and units
+        self.df_ = df.astype({'ping_time': 'datetime64[ns]',
+                                'mask_depth_upper': 'float64',
+                                'mask_depth_lower': 'float64',
+                                'priority': 'int64',
+                                'acoustic_category': str,
+                                'proportion': 'float64',
+                                'object_id': str,
+                                'channel_id': str})
+
+    
+    
