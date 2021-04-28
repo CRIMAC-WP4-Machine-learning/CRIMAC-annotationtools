@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-#Load som packages
+#Load some packages
+import xarray as xr
 import numpy as np
 import xmltodict,os, struct
 from datetime import datetime
@@ -1497,80 +1498,117 @@ class grid_to_annotation (object):
     
     
     Input: 
-        z_obj:  a zarr object as specified from ????
+        p_file:  a prediction result file
+        r_file:  a gridded raw file
         TH:     a threshold parameter for when a prediction should be labeled to a selected species
         target_category : specify which target should be outputed to annotation
         school_id: id of the first school box
-        chn_id: channel id
+        pred_frequency: frequency used to make the prediction
         
    """
         
     
-    def __init__(self,z_obj=None,TH = 1,target_category=None,school_id=1,chn_id='value'):
+    def __init__(self, p_file, r_file, TH=1, target_category='pred_sandeel', school_id=1, pred_frequency=38000):
 
-        
-        #For bookkeeping
-        correct_time=[]
-        mask_depth_upper=[]
-        mask_depth_lower=[]
-        priority=[]
-        acousticCat=[]
-        proportion=[]
-        ID=[]
-        ChannelID=[]
-        
-        #group stuff
-        tmp = np.matrix(z_obj[target_category])
-        tmp[tmp>=TH]=1
-        tmp[tmp<TH]=0
-        all_labels = measure.label(tmp)
-    
-    
-        #go through each grp
-        for one_label in np.unique(all_labels)[1:]: 
-            
-            #Grab the zar object of the selected species
-            #TODO: a fix is needed for adding multiple categories
-            z_obj_label = z_obj[target_category][np.where(all_labels == one_label)]
-            
-            
-            #Loop through each time interval
-            for t in np.sort(np.unique(z_obj_label['ping_time'])):
-                
-                #Get depth information per ping
-                depths = z_obj_label['range'][np.array(z_obj_label['ping_time']==t)]
-                
-                #Store data
-                correct_time.append(t)
-                mask_depth_lower.append(np.min(np.array(depths)))
-                mask_depth_upper.append(np.max(np.array(depths)))
-                priority.append(2)
-                acousticCat.append(target_category)
-                proportion.append(1)
-                ID.append('school_'+str(school_id))
-                ChannelID.append(chn_id)
-            school_id+=1
-                
-            
-        #Make a dataframe 
-        df = pd.DataFrame(data={'ping_time': correct_time,
-                                'mask_depth_upper':mask_depth_upper,
-                                'mask_depth_lower':mask_depth_lower,
-                                'priority':priority,
-                                'acoustic_category':acousticCat,
-                                'proportion':proportion,
-                                'object_id':ID,
-                                'channel_id':ChannelID})
+        # Function to do per-chunk processing
+        def to_df_chunk(p_data, r_data, target_category, school_id, pred_frequency):
 
-        #Fix naming and units
-        self.df_ = df.astype({'ping_time': 'datetime64[ns]',
-                                'mask_depth_upper': 'float64',
-                                'mask_depth_lower': 'float64',
-                                'priority': 'int64',
-                                'acoustic_category': str,
-                                'proportion': 'float64',
-                                'object_id': str,
-                                'channel_id': str})
+            # Placeholder
+            correct_time=[]
+            mask_depth_upper=[]
+            mask_depth_lower=[]
+            priority=[]
+            acoustic_cat=[]
+            proportion=[]
+            id=[]
+            channel_id=[]
+
+            # Do labeling
+            all_labels = measure.label(p_data)
+
+            #go through each grp
+            chn_id = r_data.sel(frequency=pred_frequency).channel_id.data.compute()
+            for one_label in np.unique(all_labels)[1:]:
+                #Grab the zar object of the selected species
+                #TODO: a fix is needed for adding multiple categories
+                p_data_label = p_data[np.where(all_labels == one_label)]
+                #Loop through each time interval
+                for t in np.sort(np.unique(p_data_label['ping_time'])):
+                    #Get depth information per ping
+                    depths = p_data_label['range'][np.array(p_data_label['ping_time']==t)]
+                    #Store data
+                    correct_time.append(t)
+                    mask_depth_lower.append(np.min(np.array(depths)))
+                    mask_depth_upper.append(np.max(np.array(depths)))
+                    priority.append(2)
+                    acoustic_cat.append(target_category)
+                    proportion.append(1)
+                    id.append('school_' + str(school_id))
+                    channel_id.append(chn_id)
+                school_id+=1
+
+            #Make a dataframe
+            df = pd.DataFrame(data={'ping_time': correct_time,
+                            'mask_depth_upper':mask_depth_upper,
+                            'mask_depth_lower':mask_depth_lower,
+                            'priority':priority,
+                            'acoustic_category':acoustic_cat,
+                            'proportion':proportion,
+                            'object_id':id,
+                            'channel_id':channel_id})
+
+            #Fix naming and units
+            df = df.astype({'ping_time': 'datetime64[ns]',
+                            'mask_depth_upper': 'float64',
+                            'mask_depth_lower': 'float64',
+                            'priority': 'int64',
+                            'acoustic_category': str,
+                            'proportion': 'float64',
+                            'object_id': str,
+                            'channel_id': str})
+
+            # Append transducer_draft (TODO: determine the frequency for prediction)
+            df = df.set_index("ping_time")
+            raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft']]
+
+            # Join the transducer_depth column
+            df = df.join(raw_td_df)
+
+            return df
+
+        # Open prediction data
+        p_obj = xr.open_zarr(p_file)
+
+        # Unify chunks
+        p_obj = p_obj.unify_chunks()
+
+        # Get transducer_draft values from the raw data
+        r_obj = xr.open_zarr(r_file)
+        tmp_r = r_obj['transducer_draft']
+
+        # Get the target category
+        tmp_p = p_obj[target_category]
+
+        # Filter by threshold
+        tmp_p = xr.where(tmp_p>=TH, 1, 0)
+
+        # Get the largest chunks for loop
+        one_chunk = np.max(tmp_p.chunks[1])
+
+        # Loop all the chunks
+        output_df = []
+        for start_pos in np.arange(0, tmp_p.shape[1], one_chunk):
+            df = to_df_chunk(tmp_p[:,start_pos:start_pos+one_chunk], tmp_r[:,start_pos:start_pos+one_chunk], target_category, school_id, pred_frequency)
+            # Only join whenever there is at least a single row in the table
+            if df.shape[0] > 0 :
+                output_df.append(df)
+
+        # Store as df
+        self.df_ = pd.concat(output_df)
+
+        # Check nrow
+        if self.df_.shape[0] == 0:
+             self.df_ = None
 
     
     
