@@ -1567,11 +1567,11 @@ class grid_to_annotation (object):
                             'object_id': str,
                             'channel_id': str})
 
-            # Append transducer_draft (TODO: determine the frequency for prediction)
-            df = df.set_index("ping_time")
-            raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft']]
+            # Get transducer_draft and raw_file from the raw object (TODO: determine the frequency for prediction)
+            raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft', 'raw_file']]
 
-            # Join the transducer_depth column
+            # (Append) join the transducer_depth and raw_file columns
+            df = df.set_index("ping_time")
             df = df.join(raw_td_df)
 
             return df
