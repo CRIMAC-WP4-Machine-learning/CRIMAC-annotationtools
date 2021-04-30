@@ -151,10 +151,8 @@ class annotation_to_work (object):
 #        
         
 #        ping_time = ping_time-time_diff
-        
-        idx_file = '2016837-D20160427-T061550.idx'
-        min(annotation[annotation['raw_file']=='2016837-D20160427-T061550.raw']['ping_time'])
-        np.unique(scanned_df[scanned_df['idx_file_list']==idx_file]['ping_time_datetime'])[894]
+        s_count = 1
+        objectNumber = 1
         for idx_file in np.unique(scanned_df['idx_file_list']):
             anno = (annotation[annotation['ping_time'].isin(scanned_df[scanned_df['idx_file_list']==idx_file]['ping_time_datetime'])])
             s_df = scanned_df[scanned_df['idx_file_list']==idx_file]
@@ -247,7 +245,7 @@ class annotation_to_work (object):
                 bound_id = 0
                 connector_id = 0
                 channel_ids=list(config['configuration'].keys())#data.channel_ids
-                objectNumber = 1
+#                objectNumber = 1
                 if s_layer_data.empty: 
                     print('No layer is defined, Make a dummy layer')
                     curveBoundary = ET.SubElement(boundaries, 'curveBoundary')        
@@ -471,7 +469,7 @@ class annotation_to_work (object):
         
                 
                 s_school_data = anno[anno.priority==2]
-                s_count = 1
+#                s_count = 1
                 channel_ids=list(config['configuration'].keys())#data.channel_ids
                 for s_id in set(s_school_data.object_id): 
                     school_data=s_school_data[s_school_data.object_id==s_id] 

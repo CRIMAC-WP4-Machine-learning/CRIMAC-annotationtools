@@ -1508,7 +1508,7 @@ class grid_to_annotation (object):
    """
         
     
-    def __init__(self, p_file, r_file, TH=1, target_category='pred_sandeel', school_id=0.7, pred_frequency=38000):
+    def __init__(self, p_file, r_file, TH=0.7, target_category='pred_sandeel', school_id=1, pred_frequency=38000):
 
         
         
@@ -1606,6 +1606,7 @@ class grid_to_annotation (object):
         output_df = []
         for start_pos in np.arange(0, tmp_p.shape[1], one_chunk):
             df = to_df_chunk(tmp_p[:,start_pos:start_pos+one_chunk], tmp_r[:,start_pos:start_pos+one_chunk], target_category, school_id, pred_frequency)
+            school_id=int(np.array(df['object_id'])[-1].replace('school_',''))+1
             # Only join whenever there is at least a single row in the table
             if df.shape[0] > 0 :
                 output_df.append(df)
