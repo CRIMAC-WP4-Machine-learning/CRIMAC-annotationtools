@@ -82,7 +82,7 @@ class annotation_to_work (object):
                                 time_diff = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)-float(round(decimal.Decimal(timestamp), 3))
                                 
                             p_time = float(round(decimal.Decimal(p_time), 3))
-                            p_time_corrected = p_time-round(time_diff,3)
+                            p_time_corrected = p_time-float(round(decimal.Decimal(time_diff),3))
                             ping_time_IDX.append(p_time)
                             ping_time_IDX_corrected.append(p_time_corrected)
                             ping_time_datetime.append(np.datetime64(unix_to_datetime(p_time_corrected)))
@@ -152,7 +152,9 @@ class annotation_to_work (object):
         
 #        ping_time = ping_time-time_diff
         
-        
+        idx_file = '2016837-D20160427-T061550.idx'
+        min(annotation[annotation['raw_file']=='2016837-D20160427-T061550.raw']['ping_time'])
+        np.unique(scanned_df[scanned_df['idx_file_list']==idx_file]['ping_time_datetime'])[894]
         for idx_file in np.unique(scanned_df['idx_file_list']):
             anno = (annotation[annotation['ping_time'].isin(scanned_df[scanned_df['idx_file_list']==idx_file]['ping_time_datetime'])])
             s_df = scanned_df[scanned_df['idx_file_list']==idx_file]
