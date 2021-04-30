@@ -1508,8 +1508,10 @@ class grid_to_annotation (object):
    """
         
     
-    def __init__(self, p_file, r_file, TH=1, target_category='pred_sandeel', school_id=1, pred_frequency=38000):
+    def __init__(self, p_file, r_file, TH=1, target_category='pred_sandeel', school_id=0.7, pred_frequency=38000):
 
+        
+        
         # Function to do per-chunk processing
         def to_df_chunk(p_data, r_data, target_category, school_id, pred_frequency):
 
@@ -1547,6 +1549,7 @@ class grid_to_annotation (object):
                     channel_id.append(chn_id)
                 school_id+=1
 
+
             #Make a dataframe
             df = pd.DataFrame(data={'ping_time': correct_time,
                             'mask_depth_upper':mask_depth_upper,
@@ -1572,7 +1575,11 @@ class grid_to_annotation (object):
 
             # (Append) join the transducer_depth and raw_file columns
             df = df.set_index("ping_time")
-            df = df.join(raw_td_df)
+            
+            #Correct from range to depth
+            df['ping_time']=df['ping_time']+raw_td_df['transducer_draft']
+            
+#            df = df.join(raw_td_df)
 
             return df
 
