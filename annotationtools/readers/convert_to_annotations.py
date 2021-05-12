@@ -1572,12 +1572,14 @@ class grid_to_annotation (object):
 
             # Get transducer_draft and raw_file from the raw object (TODO: determine the frequency for prediction)
             raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft', 'raw_file']]
+            raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft']]
 
             # (Append) join the transducer_depth and raw_file columns
-            df = df.set_index("ping_time")
+#            df = df.set_index("ping_time")
             
-            #Correct from range to depth
-            df['ping_time']=df['ping_time']+raw_td_df['transducer_draft']
+            raw_td_df=raw_td_df.reset_index()
+            df['mask_depth_upper']=df['mask_depth_upper']+raw_td_df['transducer_draft']
+            df['mask_depth_lower']=df['mask_depth_lower']+raw_td_df['transducer_draft']
             
 #            df = df.join(raw_td_df)
 
@@ -1605,8 +1607,10 @@ class grid_to_annotation (object):
         # Loop all the chunks
         output_df = []
         for start_pos in np.arange(0, tmp_p.shape[1], one_chunk):
+            print(start_pos)
             df = to_df_chunk(tmp_p[:,start_pos:start_pos+one_chunk], tmp_r[:,start_pos:start_pos+one_chunk], target_category, school_id, pred_frequency)
-            school_id=int(np.array(df['object_id'])[-1].replace('school_',''))+1
+            if len(np.array(df['object_id']))>0:
+                school_id=int(np.array(df['object_id'])[-1].replace('school_',''))+1
             # Only join whenever there is at least a single row in the table
             if df.shape[0] > 0 :
                 output_df.append(df)
