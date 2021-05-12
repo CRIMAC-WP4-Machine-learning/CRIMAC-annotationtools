@@ -167,7 +167,7 @@ class annotation_to_work (object):
                 # =============================================================================
                 # Get channel info
                 # =============================================================================
-                channel_ids=list(config['configuration'].keys())#data.channel_ids
+#                channel_ids=list(config['configuration'].keys())#data.channel_ids
                 frequency=[(int(config['configuration'][p]['frequency']/1000)) for p in config['configuration'].keys()]
                 
                 
@@ -202,8 +202,8 @@ class annotation_to_work (object):
                 #Grab all data that shall be excluded (0.0)
                 excludedData = anno[anno.acoustic_category.astype(float)==0.0]
                 #Grab and sort channel idx
-                channel_ids = list(set(excludedData.channel_id))
-                channel_ids.sort()
+#                channel_ids = list(set(excludedData.channel_id))
+#                channel_ids.sort()
                 #loop through each channel
                 for chn in channel_ids: 
                     #Subsett excluded pixels per channel
@@ -244,7 +244,7 @@ class annotation_to_work (object):
                 layerDefinitions = ET.SubElement(layerInterpretation, 'layerDefinitions') 
                 bound_id = 0
                 connector_id = 0
-                channel_ids=list(config['configuration'].keys())#data.channel_ids
+#                channel_ids=list(config['configuration'].keys())#data.channel_ids
 #                objectNumber = 1
                 if s_layer_data.empty: 
                     print('No layer is defined, Make a dummy layer')
@@ -470,7 +470,7 @@ class annotation_to_work (object):
                 
                 s_school_data = anno[anno.priority==2]
 #                s_count = 1
-                channel_ids=list(config['configuration'].keys())#data.channel_ids
+#                channel_ids=list(config['configuration'].keys())#data.channel_ids
                 for s_id in set(s_school_data.object_id): 
                     school_data=s_school_data[s_school_data.object_id==s_id] 
                     school = ET.SubElement(schoolInterpretation,'schoolMaskRep')

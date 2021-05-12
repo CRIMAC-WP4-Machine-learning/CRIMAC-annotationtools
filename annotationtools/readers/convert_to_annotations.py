@@ -1609,6 +1609,7 @@ class grid_to_annotation (object):
         for start_pos in np.arange(0, tmp_p.shape[1], one_chunk):
             print(start_pos)
             df = to_df_chunk(tmp_p[:,start_pos:start_pos+one_chunk], tmp_r[:,start_pos:start_pos+one_chunk], target_category, school_id, pred_frequency)
+            df = df.dropna()
             if len(np.array(df['object_id']))>0:
                 school_id=int(np.array(df['object_id'])[-1].replace('school_',''))+1
             # Only join whenever there is at least a single row in the table
