@@ -1586,12 +1586,14 @@ class grid_to_annotation (object):
             return df
 
         # Open prediction data
+        print('Read prediction')
         p_obj = xr.open_zarr(p_file)
 
         # Unify chunks
         p_obj = p_obj.unify_chunks()
 
         # Get transducer_draft values from the raw data
+        print('Read gridd')
         r_obj = xr.open_zarr(r_file)
         tmp_r = r_obj['transducer_draft']
 
@@ -1599,11 +1601,13 @@ class grid_to_annotation (object):
         tmp_p = p_obj[target_category]
 
         # Filter by threshold
+        print('Apply threshold')
+        
         tmp_p = xr.where(tmp_p>=TH, 1, 0)
 
-        print(tmp_p.chunks)
+        print(tmp_p.chunk)
         # Get the largest chunks for loop
-        one_chunk = np.max(tmp_p.chunk[1])
+        one_chunk = np.max(tmp_p.chunks[1])
 
         # Loop all the chunks
         output_df = []

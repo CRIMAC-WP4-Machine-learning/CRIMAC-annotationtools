@@ -1,3 +1,4 @@
 xarray
 numpy
 xmltodict
+dask[array]
