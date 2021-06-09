@@ -1571,7 +1571,7 @@ class grid_to_annotation (object):
                             'channel_id': str})
 
             # Get transducer_draft and raw_file from the raw object (TODO: determine the frequency for prediction)
-            raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft', 'raw_file']]
+#            raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft', 'raw_file']]
             raw_td_df = r_data.sel(frequency=pred_frequency).to_dataframe()[['transducer_draft']]
 
             # (Append) join the transducer_depth and raw_file columns
@@ -1601,8 +1601,9 @@ class grid_to_annotation (object):
         # Filter by threshold
         tmp_p = xr.where(tmp_p>=TH, 1, 0)
 
+        print(tmp_p.chunks)
         # Get the largest chunks for loop
-        one_chunk = np.max(tmp_p.chunks[1])
+        one_chunk = np.max(tmp_p.chunk[1])
 
         # Loop all the chunks
         output_df = []
