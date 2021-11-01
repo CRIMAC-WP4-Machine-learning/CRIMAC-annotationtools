@@ -888,6 +888,11 @@ class work_to_annotation (object):
         #Read the ping times
         fid = RawSimradFile(index_file, 'r')
         config = fid.read(1)
+        
+        raw_file = index_file[0: -3]+"raw"
+        fid2 = RawSimradFile(raw_file, 'r')
+        config = fid2.read(1)
+        
         channel_ids = list(config['configuration'].keys())#data.channel_ids
         timestamp = config['timestamp'].timestamp()
         ping_time_IDX = list()
@@ -896,8 +901,10 @@ class work_to_annotation (object):
         while run:
             try:
                 idx_datagram = fid.read(1)
-                raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)
-                p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
+                p_time = nt_to_unix((int(idx_datagram['low_date']), int(idx_datagram['high_date'])), return_datetime=False)
+                #the lines below may be an option for some older files  
+                #raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)                 
+                #p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
                 ping_time_IDX.append(float(round(decimal.Decimal(p_time), 3)))
             except:
                 run = False
