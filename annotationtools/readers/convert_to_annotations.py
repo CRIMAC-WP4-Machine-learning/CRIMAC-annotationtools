@@ -215,7 +215,18 @@ class work_reader (object):
         ####################################################################
         #Procesing the information for exclude region
         ####################################################################
-        if not not(doc['regionInterpretation']['exclusionRanges']):
+        
+        #checking if the attribute is not missing (null) and if it is not empty
+        parseelement = 0
+        try:
+            doc['regionInterpretation']['exclusionRanges']
+
+            parseelement = 1
+        except:
+            parseelement = 0
+            print("ERROR: LSSS work file :: in  Procesing the information for exclude region (null)")
+
+        if parseelement > 0 and not not(doc['regionInterpretation']['exclusionRanges']):
             
             self.exclude = structtype()
             
@@ -246,7 +257,16 @@ class work_reader (object):
         ####################################################################
         
         #check if there is any inforamtion of erased masks
-        if not not(doc['regionInterpretation']['masking']):
+        
+        #checking if the attribute is not missing (null) and if it is not empty
+        parseelement=0
+        try:
+            doc['regionInterpretation']['masking']
+            parseelement = 1
+        except :
+            parseelement = 0
+            print("ERROR: LSSS work file :: in  Procesing the information for the erased masks (null)")
+        if parseelement>0 and not not(doc['regionInterpretation']['masking']):   
             
             self.erased = structtype()
             #If so proceed
