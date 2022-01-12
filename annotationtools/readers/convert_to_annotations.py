@@ -1112,7 +1112,7 @@ class work_to_annotation (object):
                         region_category_names = []
                         region_category_proportions = []
                         reg_chn_idx=0
-                        print (dir(work.layer[i]))
+                        #print (dir(work.layer[i]))
                         if "interpretation" in dir(work.layer[i]):
                             
                             if type(work.layer[i].interpretation) == list:
@@ -1205,11 +1205,11 @@ class work_to_annotation (object):
                                         acousticCat.append(int(region_category_names[0][sp_prop_c]))
                                         proportion.append(float(region_category_proportions[0][sp_prop_c]))
                                         ChannelID.append(region_channels[ik])
-                                        print('Layer-' + str(i))
-                                        print(region_category_names[0][sp_prop_c])
-                                        print(region_category_proportions[0][sp_prop_c])
+                                        #print('Layer-' + str(i))
+                                        #print(region_category_names[0][sp_prop_c])
+                                        #print(region_category_proportions[0][sp_prop_c])
                                         sp_prop_c=sp_prop_c+1
-                                        print(region_channels[ik])
+                                        #print(region_channels[ik])
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
