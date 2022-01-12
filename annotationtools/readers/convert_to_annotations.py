@@ -1095,81 +1095,202 @@ class work_to_annotation (object):
         ####################################################################
         #Process the layer mask
         ####################################################################
+        
+        
         if 'layer' in dir(work):
             for i in range(len(work.layer)):
-                if "boundaries" in dir(work.layer[i]):
-                    mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
-                    mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+                
+                try:
                     
-                    
-                    region_channels = []
-                    region_channels_id = []
-                    region_category_names = []
-                    region_category_proportions = []
-                    reg_chn_idx=0
-                    if "interpretation" in dir(work.layer[i]):
-                        if type(work.layer[i].interpretation) == list: 
-                            for intr in work.layer[i].interpretation: 
-                                if "frequency" in list(intr.keys()):
-                                    if intr.frequency!= -1:
-                                        region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i][0]))
-                                        region_category_names=np.hstack((region_category_names,intr.species_id))
-                                        region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
-                                        if type(intr.fraction)== float:
-                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,1)))
-                                        elif type(intr.fraction)== int: 
-                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,1)))
+                    if "boundaries" in dir(work.layer[i]):
+                        mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
+                        mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+
+
+                        region_channels = []
+                        region_channels_id = []
+                        region_category_names = []
+                        region_category_proportions = []
+                        reg_chn_idx=0
+                        print (dir(work.layer[i]))
+                        if "interpretation" in dir(work.layer[i]):
+                            
+                            if type(work.layer[i].interpretation) == list:
+                                for intr in work.layer[i].interpretation:
+                                    
+                                    run1=0
+                                    if intr!=None:
+                                        if "frequency" in dir(intr):
+                                            run1=1
+
+                                    if run1==1:
+                                        if intr.frequency!= -1:
+                                            
+                                            #region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i][0]))
+                                            region_channels.append(([i for i in channel_ids if intr.frequency in i][0]))
+                                            region_category_names.append(intr.species_id)
+                                            
+                                            region_category_proportions.append(intr.fraction)
+                                            
+                                            if type(intr.fraction)== float:
+                                                #region_channels_id.append((np.repeat(reg_chn_idx,1)))
+                                                region_channels_id.append(reg_chn_idx)
+                                            elif type(intr.fraction)== int:
+                                                #region_channels_id.append((np.repeat(reg_chn_idx,1)))
+                                                region_channels_id.append(reg_chn_idx)
+                                            else:
+                                                #region_channels_id.append(( np.repeat(reg_chn_idx,len(intr.fraction))))
+                                                region_channels_id.append([reg_chn_idx]*20)
+                                            
+                                            reg_chn_idx+=1
+                                            
                                         else:
-                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
+                                            region_channels.append(-1)
+                                            region_category_names.append(-1)
+                                            region_category_proportions.append(-1)
+                                            region_channels_id.append(reg_chn_idx)
+                                            reg_chn_idx+=1
+                                        
+                                        
+                                    else:
+                                        region_channels.append("-1")
+                                        region_category_names.append("-1")
+                                        region_category_proportions.append("-1")
+                                        region_channels_id.append(reg_chn_idx)
                                         reg_chn_idx+=1
-                                    else: 
-                                        region_channels = np.hstack((region_channels,-1))
-                                        region_category_names=np.hstack((region_category_names,-1))
-                                        region_category_proportions = np.hstack((region_category_proportions,-1))
-                                        region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
-                                        reg_chn_idx+=1
-                                else: 
+                            else:
+                                
+                                intr=work.layer[i].interpretation
+                                
+                                if "frequency" in dir(intr):
+                                    region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i] ))
+                                    region_category_names=np.hstack((region_category_names,intr.species_id))
+                                    region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
+                                    region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
+                                    reg_chn_idx+=1
+                                    
+                                else:
                                     region_channels = np.hstack((region_channels,-1))
                                     region_category_names=np.hstack((region_category_names,-1))
                                     region_category_proportions = np.hstack((region_category_proportions,-1))
                                     region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
                                     reg_chn_idx+=1
-                        else: 
-                            intr=work.layer[i].interpretation
-                            if "frequency" in list(intr.keys()):
-                                region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i] ))
-                                region_category_names=np.hstack((region_category_names,intr.species_id))
-                                region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
-                                region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
-                                reg_chn_idx+=1
-                            else: 
-                                region_channels = np.hstack((region_channels,-1))
-                                region_category_names=np.hstack((region_category_names,-1))
-                                region_category_proportions = np.hstack((region_category_proportions,-1))
-                                region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
-                                reg_chn_idx+=1
-                    else:
-                        region_channels = np.hstack((region_channels,-1))
-                        region_category_names=np.hstack((region_category_names,-1))
-                        region_category_proportions = np.hstack((region_category_proportions,-1))
-                        region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
-                        reg_chn_idx+=1
-
+                                    
+                        else:
                             
-                    for ii in range(len(mask_depth)): 
-                        m_depth = np.array(mask_depth[ii])
-                        m_depth=m_depth.reshape(-1,2)
-                        for iii in range(m_depth.shape[0]):
-                            for ik in range(len(region_channels)): 
-                                for ikk in np.where(region_channels_id==ik)[0]:
-                                    pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
-                                    mask_depth_upper.append(min(m_depth[iii,:]))
-                                    mask_depth_lower.append(max(m_depth[iii,:]))
-                                    priority.append(3)
-                                    ID.append('Layer-' + str(i))
-                                    acousticCat.append(int(region_category_names[ikk]))
-                                    proportion.append(float(region_category_proportions[ikk]))
-                                    ChannelID.append(region_channels[ik])
+                            region_channels = np.hstack((region_channels,-1))
+                            region_category_names=np.hstack((region_category_names,-1))
+                            region_category_proportions = np.hstack((region_category_proportions,-1))
+                            region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+                            reg_chn_idx+=1
+                            
+
+                        #print(len(mask_depth))
+                        #print(mask_depth)
+                        for ii in range(len(mask_depth)):
+                            m_depth = np.array(mask_depth[ii])
+                            m_depth=m_depth.reshape(-1,2)
+                            
+                            for iii in range(m_depth.shape[0]):
+                                for ik in range(len(region_channels)):
+
+                                    #for ikk in np.where(region_channels_id==ik)[0]:
+                                    sp_prop_c=0
+                                    for sp_prop in region_category_names[0]:
+                                        pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
+                                        mask_depth_upper.append(min(m_depth[iii,:]))
+                                        mask_depth_lower.append(max(m_depth[iii,:]))
+                                        priority.append(3)
+                                        ID.append('Layer-' + str(i))
+                                        acousticCat.append(int(region_category_names[0][sp_prop_c]))
+                                        proportion.append(float(region_category_proportions[0][sp_prop_c]))
+                                        ChannelID.append(region_channels[ik])
+                                        print('Layer-' + str(i))
+                                        print(region_category_names[0][sp_prop_c])
+                                        print(region_category_proportions[0][sp_prop_c])
+                                        sp_prop_c=sp_prop_c+1
+                                        print(region_channels[ik])
+                except Exception as e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
+                    print(exc_type, fname, exc_tb.tb_lineno)
+
+#        if 'layer' in dir(work):
+#            for i in range(len(work.layer)):
+#                if "boundaries" in dir(work.layer[i]):
+#                    mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
+#                    mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+#                    
+#                    
+#                    region_channels = []
+#                    region_channels_id = []
+#                    region_category_names = []
+#                    region_category_proportions = []
+#                    reg_chn_idx=0
+#                    if "interpretation" in dir(work.layer[i]):
+#                        if type(work.layer[i].interpretation) == list: 
+#                            for intr in work.layer[i].interpretation: 
+#                                if "frequency" in list(intr.keys()):
+#                                    if intr.frequency!= -1:
+#                                        region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i][0]))
+#                                        region_category_names=np.hstack((region_category_names,intr.species_id))
+#                                        region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
+#                                        if type(intr.fraction)== float:
+#                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,1)))
+#                                        elif type(intr.fraction)== int: 
+#                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,1)))
+#                                        else:
+#                                            region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
+#                                        reg_chn_idx+=1
+#                                    else: 
+#                                        region_channels = np.hstack((region_channels,-1))
+#                                        region_category_names=np.hstack((region_category_names,-1))
+#                                        region_category_proportions = np.hstack((region_category_proportions,-1))
+#                                        region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+#                                        reg_chn_idx+=1
+#                                else: 
+#                                    region_channels = np.hstack((region_channels,-1))
+#                                    region_category_names=np.hstack((region_category_names,-1))
+#                                    region_category_proportions = np.hstack((region_category_proportions,-1))
+#                                    region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+#                                    reg_chn_idx+=1
+#                        else: 
+#                            intr=work.layer[i].interpretation
+#                            if "frequency" in list(intr.keys()):
+#                                region_channels=np.hstack((region_channels,[i for i in channel_ids if intr.frequency in i] ))
+#                                region_category_names=np.hstack((region_category_names,intr.species_id))
+#                                region_category_proportions = np.hstack((region_category_proportions,intr.fraction))
+#                                region_channels_id = np.hstack((region_channels_id,np.repeat(reg_chn_idx,len(intr.fraction))))
+#                                reg_chn_idx+=1
+#                            else: 
+#                                region_channels = np.hstack((region_channels,-1))
+#                                region_category_names=np.hstack((region_category_names,-1))
+#                                region_category_proportions = np.hstack((region_category_proportions,-1))
+#                                region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+#                                reg_chn_idx+=1
+#                    else:
+#                        region_channels = np.hstack((region_channels,-1))
+#                        region_category_names=np.hstack((region_category_names,-1))
+#                        region_category_proportions = np.hstack((region_category_proportions,-1))
+#                        region_channels_id = np.hstack((region_channels_id,reg_chn_idx))
+#                        reg_chn_idx+=1
+#
+#                            
+#                    for ii in range(len(mask_depth)): 
+#                        m_depth = np.array(mask_depth[ii])
+#                        m_depth=m_depth.reshape(-1,2)
+#                        for iii in range(m_depth.shape[0]):
+#                            for ik in range(len(region_channels)): 
+#                                for ikk in np.where(region_channels_id==ik)[0]:
+#                                    pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
+#                                    mask_depth_upper.append(min(m_depth[iii,:]))
+#                                    mask_depth_lower.append(max(m_depth[iii,:]))
+#                                    priority.append(3)
+#                                    ID.append('Layer-' + str(i))
+#                                    acousticCat.append(int(region_category_names[ikk]))
+#                                    proportion.append(float(region_category_proportions[ikk]))
+#                                    ChannelID.append(region_channels[ik])
                                 
 
         # =============================================================================
