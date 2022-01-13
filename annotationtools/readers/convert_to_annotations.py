@@ -3,7 +3,7 @@
 
 #Load som packages
 import numpy as np
-import xmltodict,os, struct
+import xmltodict,os, struct, sys
 from datetime import datetime
 from echolab2.instruments import EK60, EK80
 import pandas as pd
