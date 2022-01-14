@@ -376,26 +376,10 @@ class work_reader (object):
                         intr = interpretation
                         self.school[i].interpretations[ii]=structtype()
                         self.school[i].interpretations[ii].frequency = intr['@frequency']
-                        species = intr['species']
-                        species_id = list()
-                        fraction = list()
-                        if type(species)==list: 
-                            for s in species: 
-                                species_id = np.hstack((species_id,s['@ID']))
-                                fraction = np.hstack((fraction,s['@fraction']))
+                        if not len(set(list(intr.keys())).intersection(set(['species','@species'])))>0: 
+                            self.school[i].interpretations[ii].species_id='-1'
+                            self.school[i].interpretations[ii].fraction='1'
                         else: 
-                            species_id = np.hstack((species_id,species['@ID']))
-                            fraction = np.hstack((fraction,species['@fraction']))
-                            
-                        self.school[i].interpretations[ii].species_id=species_id
-                        self.school[i].interpretations[ii].fraction=fraction
-                        
-                    else: 
-                        #set the number of interpretated frequecies
-                        self.school[i].interpretations = [None] * len(interpretation)
-                        for intr in interpretation: 
-                            self.school[i].interpretations[ii]=structtype()
-                            self.school[i].interpretations[ii].frequency = intr['@frequency']
                             species = intr['species']
                             species_id = list()
                             fraction = list()
@@ -406,8 +390,35 @@ class work_reader (object):
                             else: 
                                 species_id = np.hstack((species_id,species['@ID']))
                                 fraction = np.hstack((fraction,species['@fraction']))
+                                
                             self.school[i].interpretations[ii].species_id=species_id
                             self.school[i].interpretations[ii].fraction=fraction
+                        
+                    else: 
+                        #set the number of interpretated frequecies
+                        self.school[i].interpretations = [None] * len(interpretation)
+                        for intr in interpretation: 
+                            species_id = list()
+                            fraction = list()
+                            if not len(set(list(intr.keys())).intersection(set(['species','@species'])))>0: 
+                                self.school[i].interpretations[ii]=structtype()
+                                self.school[i].interpretations[ii].frequency = intr['@frequency']
+                                self.school[i].interpretations[ii].species_id='-1'
+                                self.school[i].interpretations[ii].fraction='1'
+                                    
+                            else: 
+                                self.school[i].interpretations[ii]=structtype()
+                                self.school[i].interpretations[ii].frequency = intr['@frequency']
+                                species = intr['species']
+                                if type(species)==list: 
+                                    for s in species: 
+                                        species_id = np.hstack((species_id,s['@ID']))
+                                        fraction = np.hstack((fraction,s['@fraction']))
+                                else: 
+                                    species_id = np.hstack((species_id,species['@ID']))
+                                    fraction = np.hstack((fraction,species['@fraction']))
+                                self.school[i].interpretations[ii].species_id=species_id
+                                self.school[i].interpretations[ii].fraction=fraction
                             
                             ii=ii+1
                 else: 
@@ -416,8 +427,9 @@ class work_reader (object):
                     self.school[i].interpretations.frequency = -1
                     self.school[i].interpretations.species_id = -1
                     self.school[i].interpretations.fraction = -1
-                         
-                        
+                    
+                    
+                    
                 #Print the interpretation mask of each school
                 self.school[i].relativePingNumber=list()
                 self.school[i].min_depth = list()
@@ -1016,7 +1028,7 @@ class work_to_annotation (object):
                     region_category_names=[]
                     region_category_proportions=[]
                     for intr in work.school[i].interpretations:
-                        if 'frequency' in list(intr.keys()):
+                        if 'frequency' in dir(intr):
                             if not intr.species_id == -1:
                                 region_category_names = np.hstack((region_category_names,intr.species_id))#[(c.species_id) for c in intr]
                                 region_category_proportions = np.hstack((region_category_proportions,intr.fraction))# [(c.fraction) for c in intr]
@@ -1193,23 +1205,45 @@ class work_to_annotation (object):
                             
                             for iii in range(m_depth.shape[0]):
                                 for ik in range(len(region_channels)):
-
-                                    #for ikk in np.where(region_channels_id==ik)[0]:
+                                    
                                     sp_prop_c=0
-                                    for sp_prop in region_category_names[0]:
-                                        pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
-                                        mask_depth_upper.append(min(m_depth[iii,:]))
-                                        mask_depth_lower.append(max(m_depth[iii,:]))
-                                        priority.append(3)
-                                        ID.append('Layer-' + str(i))
-                                        acousticCat.append(int(region_category_names[0][sp_prop_c]))
-                                        proportion.append(float(region_category_proportions[0][sp_prop_c]))
-                                        ChannelID.append(region_channels[ik])
-                                        #print('Layer-' + str(i))
-                                        #print(region_category_names[0][sp_prop_c])
-                                        #print(region_category_proportions[0][sp_prop_c])
-                                        sp_prop_c=sp_prop_c+1
-                                        #print(region_channels[ik])
+                                    for sublist in region_category_proportions:
+                                        
+                                        if type(sublist) in [int,float,str,np.float64]: 
+                                            pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
+                                            mask_depth_upper.append(min(m_depth[iii,:]))
+                                            mask_depth_lower.append(max(m_depth[iii,:]))
+                                            priority.append(3)
+                                            ID.append('Layer-' + str(i))
+                                            ChannelID.append(region_channels[ik])
+                                            acousticCat.append(int(region_category_names[sp_prop_c]))
+                                            proportion.append(float(region_category_proportions[sp_prop_c]))
+                                        else: 
+                                            for sp_prop_cc in range(len(sublist)): 
+                                                pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
+                                                mask_depth_upper.append(min(m_depth[iii,:]))
+                                                mask_depth_lower.append(max(m_depth[iii,:]))
+                                                priority.append(3)
+                                                ID.append('Layer-' + str(i))
+                                                ChannelID.append(region_channels[ik])
+                                                acousticCat.append(int(region_category_names[sp_prop_c][sp_prop_cc]))
+                                                proportion.append(float(region_category_proportions[sp_prop_c][sp_prop_cc]))
+                                        sp_prop_c+=1
+                                    #sp_prop_c=0
+                                    #for sp_prop in region_category_names[0]:
+                                    #    pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
+                                    #    mask_depth_upper.append(min(m_depth[iii,:]))
+                                    #    mask_depth_lower.append(max(m_depth[iii,:]))
+                                    #    priority.append(3)
+                                    #    ID.append('Layer-' + str(i))
+                                    #    acousticCat.append(int(region_category_names[0][sp_prop_c]))
+                                    #    proportion.append(float(region_category_proportions[0][sp_prop_c]))
+                                    #    ChannelID.append(region_channels[ik])
+                                    #    #print('Layer-' + str(i))
+                                    #    #print(region_category_names[0][sp_prop_c])
+                                    #    #print(region_category_proportions[0][sp_prop_c])
+                                    #    sp_prop_c=sp_prop_c+1
+                                    #    #print(region_channels[ik])
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
