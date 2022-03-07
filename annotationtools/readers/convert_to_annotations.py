@@ -695,7 +695,7 @@ class work_reader (object):
                 self.layer = [None] * len(layer_definitions['layer'])
                 lay = layer_definitions['layer']
                 
-            
+
                 #define the layer as a structure type
                 self.layer[i] = structtype()
                 
@@ -705,7 +705,6 @@ class work_reader (object):
                 if lay['speciesInterpretationRoot']!= None: 
                         
                     interpretation = lay['speciesInterpretationRoot']['speciesInterpretationRep']
-                    
                     
                     ii = 0
                     if type(interpretation)!=list: 
@@ -765,7 +764,7 @@ class work_reader (object):
                     
                 self.layer[i].boundaries = structtype()
                 
-                if lay.get('objectNumber')!=None:
+                if lay.get('@objectNumber')!=None:
                     self.layer[i].boundaries.ID =int(lay['@objectNumber'])
                 else: 
                     self.layer[i].boundaries.ID =None
@@ -1118,7 +1117,6 @@ class work_to_annotation (object):
                         mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
                         mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
                         
-                        print(str(work.layer[i].boundaries.ID))
 
 
                         region_channels = []
@@ -1201,6 +1199,7 @@ class work_to_annotation (object):
 
                         #print(len(mask_depth))
                         #print(mask_depth)
+                        
                         for ii in range(len(mask_depth)):
                             m_depth = np.array(mask_depth[ii])
                             m_depth=m_depth.reshape(-1,2)
@@ -1216,7 +1215,7 @@ class work_to_annotation (object):
                                             mask_depth_upper.append(min(m_depth[iii,:]))
                                             mask_depth_lower.append(max(m_depth[iii,:]))
                                             priority.append(3)
-                                            #ID.append('Layer-' + str(i))
+                                            # ID.append('Layer-' + str(i))
                                             ID.append('Layer-'+str(work.layer[i].boundaries.ID))
                                             ChannelID.append(region_channels[ik])
                                             acousticCat.append(int(region_category_names[sp_prop_c]))
@@ -1227,7 +1226,7 @@ class work_to_annotation (object):
                                                 mask_depth_upper.append(min(m_depth[iii,:]))
                                                 mask_depth_lower.append(max(m_depth[iii,:]))
                                                 priority.append(3)
-                                                #ID.append('Layer-' + str(i))
+                                                # ID.append('Layer-' + str(i))
                                                 ID.append('Layer-'+str(work.layer[i].boundaries.ID))
                                                 ChannelID.append(region_channels[ik])
                                                 acousticCat.append(int(region_category_names[sp_prop_c][sp_prop_cc]))
@@ -1251,7 +1250,7 @@ class work_to_annotation (object):
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
+                    # print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
                     print(exc_type, fname, exc_tb.tb_lineno)
 
 #        if 'layer' in dir(work):
