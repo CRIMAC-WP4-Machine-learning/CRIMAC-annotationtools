@@ -1334,8 +1334,6 @@ class work_to_annotation (object):
         # Add output as a dataframe
         # =============================================================================
         
-        print(pingTime)
-        print(mask_depth_lower)
         if len(pingTime) > 0:
             if correct_time:
                 correct_time = np.hstack(pingTime) - time_diff
