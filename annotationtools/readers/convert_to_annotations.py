@@ -866,7 +866,7 @@ class work_reader (object):
                         
                         
                     self.layer[i].boundaries = structtype()
-                    if lay.get('objectNumber')!=None:
+                    if lay.get('@objectNumber')!=None:
                         self.layer[i].boundaries.ID =int(lay['@objectNumber'])
                     else: 
                         self.layer[i].boundaries.ID =None
@@ -1250,7 +1250,7 @@ class work_to_annotation (object):
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    # print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
+                    print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
                     print(exc_type, fname, exc_tb.tb_lineno)
 
 #        if 'layer' in dir(work):
@@ -1333,7 +1333,9 @@ class work_to_annotation (object):
         # =============================================================================
         # Add output as a dataframe
         # =============================================================================
-
+        
+        print(pingTime)
+        print(mask_depth_lower)
         if len(pingTime) > 0:
             if correct_time:
                 correct_time = np.hstack(pingTime) - time_diff
