@@ -867,7 +867,7 @@ class work_reader (object):
                         
                         
                     self.layer[i].boundaries = structtype()
-                    if lay.get('objectNumber')!=None:
+                    if lay.get('@objectNumber')!=None:
                         self.layer[i].boundaries.ID =int(lay['@objectNumber'])
                     else: 
                         self.layer[i].boundaries.ID =None
@@ -1214,7 +1214,8 @@ class work_to_annotation (object):
                                             mask_depth_upper.append(min(m_depth[iii,:]))
                                             mask_depth_lower.append(max(m_depth[iii,:]))
                                             priority.append(3)
-                                            ID.append('Layer-' + str(i))
+                                            # ID.append('Layer-' + str(i))
+                                            ID.append('Layer-' + str(work.layer[i].boundaries.ID))
                                             ChannelID.append(region_channels[ik])
                                             acousticCat.append(int(region_category_names[sp_prop_c]))
                                             proportion.append(float(region_category_proportions[sp_prop_c]))
@@ -1224,7 +1225,8 @@ class work_to_annotation (object):
                                                 mask_depth_upper.append(min(m_depth[iii,:]))
                                                 mask_depth_lower.append(max(m_depth[iii,:]))
                                                 priority.append(3)
-                                                ID.append('Layer-' + str(i))
+                                                # ID.append('Layer-' + str(i))
+                                                ID.append('Layer-' + str(work.layer[i].boundaries.ID))
                                                 ChannelID.append(region_channels[ik])
                                                 acousticCat.append(int(region_category_names[sp_prop_c][sp_prop_cc]))
                                                 proportion.append(float(region_category_proportions[sp_prop_c][sp_prop_cc]))
