@@ -460,7 +460,6 @@ class work_reader (object):
 #                    self.school[i].referenceTime = float(schools['@referenceTime'])
                     self.school[i].objectNumber = int(schools['@objectNumber'])
                     
-                    
                     #Check if there has been any interpretation made
                     if bool(schools['speciesInterpretationRoot']): 
                         
@@ -530,14 +529,25 @@ class work_reader (object):
                     self.school[i].relativePingNumber=list()
                     self.school[i].min_depth = list()
                     self.school[i].max_depth = list()
-                    for ping in schools['pingMask']: 
+                    if type(schools['pingMask'])==list:
+                        for ping in schools['pingMask']: 
+                            depth = ping['#text'].split()
+                            min_depth=depth[0::2]
+                            max_depth=depth[1::2]
+                            for d in range(len(min_depth)):
+                                self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
+                                self.school[i].min_depth = np.hstack((self.school[i].min_depth,min_depth[d]))
+                                self.school[i].max_depth = np.hstack((self.school[i].max_depth,max_depth[d]))     
+                    else: 
+                        ping = schools['pingMask']
                         depth = ping['#text'].split()
                         min_depth=depth[0::2]
                         max_depth=depth[1::2]
                         for d in range(len(min_depth)):
                             self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
                             self.school[i].min_depth = np.hstack((self.school[i].min_depth,min_depth[d]))
-                            self.school[i].max_depth = np.hstack((self.school[i].max_depth,max_depth[d]))     
+                            self.school[i].max_depth = np.hstack((self.school[i].max_depth,max_depth[d]))   
+                        
                     i=i+1
                 
                 
