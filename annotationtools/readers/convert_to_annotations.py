@@ -355,7 +355,7 @@ class work_reader (object):
                 
                 #Define the school as a structure and fill in info
                 self.school[i] = structtype()
-                self.school[i].referenceTime = float(schools['@referenceTime'])
+                # self.school[i].referenceTime = float(schools['@referenceTime'])
                 if schools.get('@objectNumber')!=None:
                     self.school[i].objectNumber = int(schools['@objectNumber'])
                 else: 
