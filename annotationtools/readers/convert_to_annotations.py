@@ -1099,7 +1099,10 @@ class work_to_annotation (object):
                                         ChannelID.append(chn)
                                         ID.append('School-'+str(work.school[i].objectNumber))
                         else:
-                            for ikk in range(len(region_channels)): 
+                            chan_length=len(region_channels)
+                            if(chan_length>len(region_category_names)):
+                                chan_length =len(region_category_names)
+                            for ikk in range(chan_length):
                                 pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
                                 mask_depth_upper.append(float(min(m_depth[iii,:])))
                                 mask_depth_lower.append(float(max(m_depth[iii,:])))
