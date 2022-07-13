@@ -948,8 +948,17 @@ class work_to_annotation (object):
                 #raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)                 
                 #p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
                 ping_time_IDX.append(float(round(decimal.Decimal(p_time), 3)))
-            except:
+            except Exception as e:
                 run = False
+                exception_type, exception_object, exception_traceback = sys.exc_info()
+                filename = exception_traceback.tb_frame.f_code.co_filename
+                line_number = exception_traceback.tb_lineno
+                print("ERROR: - Something went wrong when reading the WORK file RAW index"+ str(work_fname))
+                print("Exception type: ", exception_type)
+                print("File name: ", filename)
+                print("Line number: ", line_number)
+                print("ERROR: - Something went wrong when reading the WORK file: " + str(work_fname) + " (" + str( e) + ")")
+
 
         ping_time = np.array(ping_time_IDX)
         time_diff = np.datetime64(unix_to_datetime(ping_time[0])) - np.datetime64(unix_to_datetime(float(round(decimal.Decimal(timestamp), 3))))
