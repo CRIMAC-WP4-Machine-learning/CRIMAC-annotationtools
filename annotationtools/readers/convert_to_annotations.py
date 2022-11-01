@@ -344,10 +344,23 @@ class work_reader (object):
             
             #for bookkeeping
             i = 0
+	    
             schoolRep=[None]
-	    if not not(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']):
+	    parseelement=0
+	    try:
+                doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
+                parseelement = 1
+            except :
+		try:
+                    doc['regionInterpretation']['schoolInterpretation']['schoolRep']
+                    parseelement = 2
+            	except :
+                    parseelement = 0
+                    print("ERROR: LSSS work file :: in  Procesing the information for the schools (null)")
+	            
+            if parseelement==1 and not not(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']):
                 schoolRep=doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
-	    if not not(doc['regionInterpretation']['schoolInterpretation']['schoolRep']):
+	    if parseelement==2 and not not(doc['regionInterpretation']['schoolInterpretation']['schoolRep']):
                 schoolRep=doc['regionInterpretation']['schoolInterpretation']['schoolRep']
 		    
 
