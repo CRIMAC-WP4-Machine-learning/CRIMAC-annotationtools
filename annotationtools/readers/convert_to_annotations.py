@@ -345,9 +345,9 @@ class work_reader (object):
             #for bookkeeping
             i = 0
             schoolRep=[None]
-	        if not not(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']):
+	    if not not(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']):
                 schoolRep=doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
-	        if not not(doc['regionInterpretation']['schoolInterpretation']['schoolRep']):
+	    if not not(doc['regionInterpretation']['schoolInterpretation']['schoolRep']):
                 schoolRep=doc['regionInterpretation']['schoolInterpretation']['schoolRep']
 		    
 
@@ -462,7 +462,7 @@ class work_reader (object):
                     
                     #Define the school as a structure and fill in infoo
                     self.school[i] = structtype()
-#                    self.school[i].referenceTime = float(schools['@referenceTime'])
+#                   self.school[i].referenceTime = float(schools['@referenceTime'])
                     self.school[i].objectNumber = int(schools['@objectNumber'])
                     
                     #Check if there has been any interpretation made
