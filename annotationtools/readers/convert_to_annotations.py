@@ -354,7 +354,7 @@ class work_reader (object):
                 try:
                     doc['regionInterpretation']['schoolInterpretation']['schoolRep']
                     parseelement = 2
-            	except :
+                except :
                     parseelement = 0
                     print("ERROR: LSSS work file :: in  Procesing the information for the schools (null)")
                     
