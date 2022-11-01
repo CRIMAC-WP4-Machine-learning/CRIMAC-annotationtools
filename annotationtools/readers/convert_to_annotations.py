@@ -344,14 +344,19 @@ class work_reader (object):
             
             #for bookkeeping
             i = 0
+            schoolRep=[None]
+	        if not not(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']):
+                schoolRep=doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
+	        if not not(doc['regionInterpretation']['schoolInterpretation']['schoolRep']):
+                schoolRep=doc['regionInterpretation']['schoolInterpretation']['schoolRep']
+		    
 
             #Check if this is one ore several schools
-            if type(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep'])!=list: 
-                
+            if type(schoolRep)!=list:    
                 self.school = [None]
                 
                 #grab school info
-                schools = doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']
+                schools = schoolRep
                 
                 #Define the school as a structure and fill in info
                 self.school[i] = structtype()
@@ -452,8 +457,8 @@ class work_reader (object):
                 
             else: 
                 #Define the size of the list
-                self.school = [None] * len(doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep'])
-                for schools in doc['regionInterpretation']['schoolInterpretation']['schoolMaskRep']: 
+                self.school = [None] * len(schoolRep)
+                for schools in schoolRep:  
                     
                     #Define the school as a structure and fill in infoo
                     self.school[i] = structtype()
