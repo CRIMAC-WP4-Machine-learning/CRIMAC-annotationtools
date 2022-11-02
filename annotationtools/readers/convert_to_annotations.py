@@ -452,18 +452,47 @@ class work_reader (object):
                 self.school[i].relativePingNumber=list()
                 self.school[i].min_depth = list()
                 self.school[i].max_depth = list()
-                if type(schools['pingMask'])==list:
-                    for ping in schools['pingMask']: 
+                if parseelement == 1:
+                    if type(schools['pingMask'])==list:
+                        for ping in schools['pingMask']: 
+                            self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
+                            depth = ping['#text'].split()
+                            self.school[i].min_depth = np.hstack((self.school[i].min_depth,float(depth[0])))
+                            self.school[i].max_depth = np.hstack((self.school[i].max_depth,float(depth[1])))     
+                    else: 
+                        ping = schools['pingMask']
                         self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
                         depth = ping['#text'].split()
                         self.school[i].min_depth = np.hstack((self.school[i].min_depth,float(depth[0])))
-                        self.school[i].max_depth = np.hstack((self.school[i].max_depth,float(depth[1])))     
-                else: 
-                    ping = schools['pingMask']
-                    self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
-                    depth = ping['#text'].split()
-                    self.school[i].min_depth = np.hstack((self.school[i].min_depth,float(depth[0])))
-                    self.school[i].max_depth = np.hstack((self.school[i].max_depth,float(depth[1])))     
+                        self.school[i].max_depth = np.hstack((self.school[i].max_depth,float(depth[1])))  
+                        
+                elif parseelement == 2:
+                    mindepth = {}
+                    maxdepth = {}
+                    schooltemp=schools['boundaryPoints'].split()
+                    pingtemp=schooltemp[::2]
+                    depthtemp=schooltemp[1::2]
+                    for d in range(len(pingtemp)):
+                        if pingtemp[d] in maxdepth.keys():
+                            mindepth[pingtemp[d]] = depthtemp[d]
+                            
+                        else:
+                            maxdepth[pingtemp[d]] = depthtemp[d]
+                        
+                    for d in range(len(pingtemp)):
+                        vmin = float(mindepth[pingtemp[d]])
+                        vmax = float(maxdepth[pingtemp[d]])
+                        if vmax>vmin:
+                            self.school[i].relativePingNumber = np.hstack(
+                                (self.school[i].relativePingNumber, int(pingtemp[d])))
+                            self.school[i].min_depth = np.hstack((self.school[i].min_depth, mindepth[pingtemp[d]]))
+                            self.school[i].max_depth = np.hstack((self.school[i].max_depth, maxdepth[pingtemp[d]]))
+                        else:
+                            self.school[i].relativePingNumber = np.hstack(
+                                (self.school[i].relativePingNumber, int(pingtemp[d])))
+                            self.school[i].min_depth = np.hstack((self.school[i].min_depth, maxdepth[pingtemp[d]]))
+                            self.school[i].max_depth = np.hstack((self.school[i].max_depth, mindepth[pingtemp[d]]))
+                        
                 i=i+1
                 
                 
