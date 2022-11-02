@@ -547,8 +547,7 @@ class work_reader (object):
                     self.school[i].relativePingNumber=list()
                     self.school[i].min_depth = list()
                     self.school[i].max_depth = list()
-		    if parseelement == 1:
-			
+                    if parseelement == 1:
                         if type(schools['pingMask'])==list:
                             for ping in schools['pingMask']: 
                                 depth = ping['#text'].split()
@@ -567,7 +566,7 @@ class work_reader (object):
                                 self.school[i].relativePingNumber = np.hstack((self.school[i].relativePingNumber,int(ping['@relativePingNumber'])))
                                 self.school[i].min_depth = np.hstack((self.school[i].min_depth,min_depth[d]))
                                 self.school[i].max_depth = np.hstack((self.school[i].max_depth,max_depth[d]))   
-		    elif parseelement == 2:
+                    elif parseelement == 2:
                         mindepth = {}
                         maxdepth = {}
                         schooltemp=schools['boundaryPoints'].split()
@@ -583,7 +582,6 @@ class work_reader (object):
                                 maxdepth[pingtemp[d]] = depthtemp[d]
                                 print(pingtemp[d]+" max")
                         
-			
                         for d in range(len(pingtemp)):
                             vmin = float(mindepth[pingtemp[d]])
                             vmax = float(maxdepth[pingtemp[d]])
