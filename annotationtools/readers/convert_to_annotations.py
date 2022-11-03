@@ -505,7 +505,11 @@ class work_reader (object):
                     #Define the school as a structure and fill in infoo
                     self.school[i] = structtype()
 #                   self.school[i].referenceTime = float(schools['@referenceTime'])
-                    self.school[i].objectNumber = int(schools['@objectNumber'])
+                    
+                    if schools.get('@objectNumber')!=None:
+                        self.school[i].objectNumber = int(schools['@objectNumber'])
+                    else: 
+                        self.school[i].objectNumber = -1
                     
                     #Check if there has been any interpretation made
                     if bool(schools['speciesInterpretationRoot']): 
