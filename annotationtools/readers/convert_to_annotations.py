@@ -1352,7 +1352,7 @@ class work_to_annotation (object):
                 except Exception as e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
+                    #print("ERROR: LSSS work file :: work_to_annotation - Process the layer mask " + TypeError + " " + NameError + ValueError)
                     print(exc_type, fname, exc_tb.tb_lineno)
 
 #        if 'layer' in dir(work):
