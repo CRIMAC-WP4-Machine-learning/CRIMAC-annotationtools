@@ -205,7 +205,7 @@ class work_reader (object):
         ####################################################################
         #Grab information that is linked to the information section
         ####################################################################
-        self.info.numberOfPings = np.int(doc['regionInterpretation']['timeRange']['@numberOfPings'])
+        self.info.numberOfPings = int(doc['regionInterpretation']['timeRange']['@numberOfPings'])
         self.info.timeFirstPing = float(doc['regionInterpretation']['timeRange']['@start'])
         
         
