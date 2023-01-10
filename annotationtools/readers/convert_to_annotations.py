@@ -1064,7 +1064,7 @@ class work_to_annotation (object):
             for i in range(len(work.exclude.start_time)):
                 for chn in channel_ids:
                     start_time= (work.exclude.start_time[i])
-                    end_time= ping_time[np.int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
+                    end_time= ping_time[int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
                     for p in ping_time[(ping_time>=start_time) & (ping_time<=end_time)]:
                         pingTime.append(np.datetime64(unix_to_datetime(p)))
                         mask_depth_upper.append(0.0)
