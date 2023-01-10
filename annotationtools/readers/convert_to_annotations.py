@@ -763,8 +763,8 @@ class work_reader (object):
                 
                 
 #                bound_keep[i].referenceTime = np.float(bound['curveRep']['pingRange']['@referenceTime'])
-                bound_keep[i].startPing = np.int(connect_id.pingOffset[connect_id.id==startConnector])#int(bound['curveRep']['pingRange']['@startOffset'])
-                bound_keep[i].numberOfPings= np.int(connect_id.pingOffset[connect_id.id==endConnector])-np.int(connect_id.pingOffset[connect_id.id==startConnector]) #int(bound['curveRep']['pingRange']['@numberOfPings'])
+                bound_keep[i].startPing = int(connect_id.pingOffset[connect_id.id==startConnector])#int(bound['curveRep']['pingRange']['@startOffset'])
+                bound_keep[i].numberOfPings= int(connect_id.pingOffset[connect_id.id==endConnector])-np.int(connect_id.pingOffset[connect_id.id==startConnector]) #int(bound['curveRep']['pingRange']['@numberOfPings'])
                 depths = bound['curveRep']['depths']
                 depths= depths.replace('\n',' ').split()
                 bound_keep[i].depths = [float(i) for i in depths]
