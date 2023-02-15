@@ -1044,7 +1044,8 @@ class work_to_annotation (object):
         ping_time = np.array(ping_time_IDX)
         time_diff = np.datetime64(unix_to_datetime(ping_time[0])) - np.datetime64(unix_to_datetime(float(round(decimal.Decimal(timestamp), 3))))
         self.raw_work_timediff = time_diff
-
+        
+        raw_file_name = os.path.basename(raw_file )
         #For bookkeeping
         mask_depth_upper = []
         mask_depth_lower = []
@@ -1078,6 +1079,7 @@ class work_to_annotation (object):
                         ID.append('exclude-'+str(i))
                         ping_index.append(indxp)
                         indxp=indxp+1
+                        filenamelist.append(raw_file_name)
         
         
         
@@ -1104,6 +1106,7 @@ class work_to_annotation (object):
                                     ChannelID.append(channel_ids[work.erased.masks[i].channelID-1])
                                     ID.append('erased')
                                     ping_index.append( work.erased.masks[i].pingOffset[ii])
+                                    filenamelist.append(raw_file_name)
                                 else:
                                     for chn in channel_ids[work.erased.masks[i].channelID-1]: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1115,7 +1118,7 @@ class work_to_annotation (object):
                                         ChannelID.append(chn)
                                         ID.append('erased')
                                         ping_index.append( work.erased.masks[i].pingOffset[ii])
-            
+					filenamelist.append(raw_file_name)
         
         
         
@@ -1173,6 +1176,7 @@ class work_to_annotation (object):
                                 ChannelID.append(-1)
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
+                                filenamelist.append(raw_file_name)
                             else:
                                 if region_category_names == -1: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1184,7 +1188,7 @@ class work_to_annotation (object):
                                         ChannelID.append(chn)
                                         ID.append('School-'+str(work.school[i].objectNumber))
                                         ping_index.append( work.school[i].relativePingNumber[ii])
-                                    
+                                        filenamelist.append(raw_file_name)
                                 else: 
                                     for i_chn in np.arange(len(region_category_names)):
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1196,6 +1200,7 @@ class work_to_annotation (object):
                                         ChannelID.append(chn)
                                         ID.append('School-'+str(work.school[i].objectNumber))
                                         ping_index.append( work.school[i].relativePingNumber[ii])
+                                        filenamelist.append(raw_file_name)
                         else:
                             chan_length=len(region_channels)
                             if(chan_length>len(region_category_names)):
@@ -1210,6 +1215,7 @@ class work_to_annotation (object):
                                 ChannelID.append(region_channels[ikk])
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
+                                filenamelist.append(raw_file_name)
                     
                     
                         
@@ -1332,6 +1338,7 @@ class work_to_annotation (object):
                                             acousticCat.append(int(region_category_names[sp_prop_c]))
                                             proportion.append(float(region_category_proportions[sp_prop_c]))
                                             ping_index.append( work.layer[i].boundaries.ping[ii])
+                                            filenamelist.append(raw_file_name)
                                         else: 
                                             for sp_prop_cc in range(len(sublist)): 
                                                 pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1344,6 +1351,7 @@ class work_to_annotation (object):
                                                 acousticCat.append(int(region_category_names[sp_prop_c][sp_prop_cc]))
                                                 proportion.append(float(region_category_proportions[sp_prop_c][sp_prop_cc]))
                                                 ping_index.append( work.layer[i].boundaries.ping[ii])
+                                                filenamelist.append(raw_file_name)
                                         sp_prop_c+=1
                                     #sp_prop_c=0
                                     #for sp_prop in region_category_names[0]:
@@ -1462,7 +1470,8 @@ class work_to_annotation (object):
                                     'acoustic_category':acousticCat,
                                     'proportion':proportion,
                                     'object_id':ID,
-                                    'channel_id':ChannelID})
+                                    'channel_id':ChannelID,
+                                    'raw_file':filenamelist})
 
             # Convert if necessary
             self.df_ = df.astype({'ping_index': 'int64',
@@ -1473,7 +1482,8 @@ class work_to_annotation (object):
                                     'acoustic_category': str,
                                     'proportion': 'float64',
                                     'object_id': str,
-                                    'channel_id': str})
+                                    'channel_id': str,
+                                    'raw_file': str})
         else:
             self.df_ = None
      
