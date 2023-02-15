@@ -1329,7 +1329,7 @@ class work_to_annotation (object):
                                             # ID.append('Layer-' + str(i))
                                             ID.append('Layer-' + str(work.layer[i].boundaries.ID))
                                             ChannelID.append(region_channels[ik])
-                                            acousticCat.append(int(region_category_names[sp_prop_c]))ping_index.append( work.layer[i].boundaries.ping[ii])
+                                            acousticCat.append(int(region_category_names[sp_prop_c]))
                                             proportion.append(float(region_category_proportions[sp_prop_c]))
                                             ping_index.append( work.layer[i].boundaries.ping[ii])
                                         else: 
