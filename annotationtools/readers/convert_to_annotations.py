@@ -1078,9 +1078,10 @@ class work_to_annotation (object):
                         proportion.append(1.0)
                         ChannelID.append(chn)
                         ID.append('exclude-'+str(i))
+                        filenamelist.append(raw_file_name)
                         ping_index.append(indxp)
                         indxp=indxp+1
-                        filenamelist.append(raw_file_name)
+
         
         
         
