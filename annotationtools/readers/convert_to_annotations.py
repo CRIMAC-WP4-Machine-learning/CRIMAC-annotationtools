@@ -1046,17 +1046,19 @@ class work_to_annotation (object):
         self.raw_work_timediff = time_diff
         
         raw_file_name = os.path.basename(raw_file )
+        print(raw_file_name )
         #For bookkeeping
         mask_depth_upper = []
         mask_depth_lower = []
         pingTime = []
+        filenamelist = []
         ping_index = []
         priority = []
         acousticCat = []
         proportion = []
         ID = []
         ChannelID = []
-	filenamelist = []
+
         
         
         
