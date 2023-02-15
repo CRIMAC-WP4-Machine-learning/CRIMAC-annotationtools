@@ -1034,11 +1034,11 @@ class work_to_annotation (object):
                 exception_type, exception_object, exception_traceback = sys.exc_info()
                 filename = exception_traceback.tb_frame.f_code.co_filename
                 line_number = exception_traceback.tb_lineno
-                print("ERROR: - Something went wrong when reading the WORK file RAW index"+ str(raw_file))
-                print("Exception type: ", exception_type)
-                print("File name: ", filename)
-                print("Line number: ", line_number)
-                print("ERROR: - Something went wrong when reading the WORK file: " + str(raw_file) + " (" + str( e) + ")")
+                #print("ERROR: - Something went wrong when reading the WORK file RAW index"+ str(raw_file))
+                #print("Exception type: ", exception_type)
+                #print("File name: ", filename)
+                #print("Line number: ", line_number)
+                #print("ERROR: - Something went wrong when reading the WORK file: " + str(raw_file) + " (" + str( e) + ")")
 
 
         ping_time = np.array(ping_time_IDX)
