@@ -1118,12 +1118,9 @@ class work_to_annotation (object):
                                         ChannelID.append(chn)
                                         ID.append('erased')
                                         ping_index.append( work.erased.masks[i].pingOffset[ii])
-					filenamelist.append(raw_file_name)
-        
-        
-        
-        
-        
+                                        filenamelist.append(raw_file_name)
+                                        
+                                        
         ####################################################################
         #Process the school mask
         ####################################################################
