@@ -1049,6 +1049,7 @@ class work_to_annotation (object):
         mask_depth_upper = []
         mask_depth_lower = []
         pingTime = []
+        ping_index = []
         priority = []
         acousticCat = []
         proportion = []
@@ -1065,6 +1066,7 @@ class work_to_annotation (object):
                 for chn in channel_ids:
                     start_time= (work.exclude.start_time[i])
                     end_time= ping_time[int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
+                    indxp=0;
                     for p in ping_time[(ping_time>=start_time) & (ping_time<=end_time)]:
                         pingTime.append(np.datetime64(unix_to_datetime(p)))
                         mask_depth_upper.append(0.0)
@@ -1074,7 +1076,8 @@ class work_to_annotation (object):
                         proportion.append(1.0)
                         ChannelID.append(chn)
                         ID.append('exclude-'+str(i))
-        
+                        ping_index.append(indxp)
+                        indxp=indxp+1
         
         
         
@@ -1100,6 +1103,7 @@ class work_to_annotation (object):
                                     proportion.append(1.0)
                                     ChannelID.append(channel_ids[work.erased.masks[i].channelID-1])
                                     ID.append('erased')
+                                    ping_index.append( work.erased.masks[i].pingOffset[ii])
                                 else:
                                     for chn in channel_ids[work.erased.masks[i].channelID-1]: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1110,6 +1114,7 @@ class work_to_annotation (object):
                                         proportion.append(1.0)
                                         ChannelID.append(chn)
                                         ID.append('erased')
+                                        ping_index.append( work.erased.masks[i].pingOffset[ii])
             
         
         
@@ -1167,6 +1172,7 @@ class work_to_annotation (object):
                                 proportion.append(-1)
                                 ChannelID.append(-1)
                                 ID.append('School-'+str(work.school[i].objectNumber))
+                                ping_index.append( work.school[i].relativePingNumber[ii])
                             else:
                                 if region_category_names == -1: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1177,6 +1183,7 @@ class work_to_annotation (object):
                                         proportion.append(region_category_proportions)
                                         ChannelID.append(chn)
                                         ID.append('School-'+str(work.school[i].objectNumber))
+                                        ping_index.append( work.school[i].relativePingNumber[ii])
                                     
                                 else: 
                                     for i_chn in np.arange(len(region_category_names)):
@@ -1188,6 +1195,7 @@ class work_to_annotation (object):
                                         proportion.append(region_category_proportions[i_chn])
                                         ChannelID.append(chn)
                                         ID.append('School-'+str(work.school[i].objectNumber))
+                                        ping_index.append( work.school[i].relativePingNumber[ii])
                         else:
                             chan_length=len(region_channels)
                             if(chan_length>len(region_category_names)):
@@ -1201,6 +1209,7 @@ class work_to_annotation (object):
                                 proportion.append(region_category_proportions[ikk])
                                 ChannelID.append(region_channels[ikk])
                                 ID.append('School-'+str(work.school[i].objectNumber))
+                                ping_index.append( work.school[i].relativePingNumber[ii])
                     
                     
                         
@@ -1320,8 +1329,9 @@ class work_to_annotation (object):
                                             # ID.append('Layer-' + str(i))
                                             ID.append('Layer-' + str(work.layer[i].boundaries.ID))
                                             ChannelID.append(region_channels[ik])
-                                            acousticCat.append(int(region_category_names[sp_prop_c]))
+                                            acousticCat.append(int(region_category_names[sp_prop_c]))ping_index.append( work.layer[i].boundaries.ping[ii])
                                             proportion.append(float(region_category_proportions[sp_prop_c]))
+                                            ping_index.append( work.layer[i].boundaries.ping[ii])
                                         else: 
                                             for sp_prop_cc in range(len(sublist)): 
                                                 pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1333,6 +1343,7 @@ class work_to_annotation (object):
                                                 ChannelID.append(region_channels[ik])
                                                 acousticCat.append(int(region_category_names[sp_prop_c][sp_prop_cc]))
                                                 proportion.append(float(region_category_proportions[sp_prop_c][sp_prop_cc]))
+                                                ping_index.append( work.layer[i].boundaries.ping[ii])
                                         sp_prop_c+=1
                                     #sp_prop_c=0
                                     #for sp_prop in region_category_names[0]:
@@ -1443,7 +1454,8 @@ class work_to_annotation (object):
             else:
                 correct_time = np.hstack(pingTime)
 
-            df = pd.DataFrame(data={'ping_time': correct_time,
+            df = pd.DataFrame(data={'ping_index': ping_index,
+                                    'ping_time': correct_time,
                                     'mask_depth_upper':mask_depth_upper,
                                     'mask_depth_lower':mask_depth_lower,
                                     'priority':priority,
@@ -1453,7 +1465,8 @@ class work_to_annotation (object):
                                     'channel_id':ChannelID})
 
             # Convert if necessary
-            self.df_ = df.astype({'ping_time': 'datetime64[ns]',
+            self.df_ = df.astype({'ping_index': 'int64',
+                                    'ping_time': 'datetime64[ns]',
                                     'mask_depth_upper': 'float64',
                                     'mask_depth_lower': 'float64',
                                     'priority': 'int64',
