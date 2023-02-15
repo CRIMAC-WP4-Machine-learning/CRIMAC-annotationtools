@@ -1056,6 +1056,7 @@ class work_to_annotation (object):
         proportion = []
         ID = []
         ChannelID = []
+	filenamelist = []
         
         
         
