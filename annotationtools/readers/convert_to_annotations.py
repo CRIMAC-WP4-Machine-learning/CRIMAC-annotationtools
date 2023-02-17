@@ -1131,7 +1131,7 @@ class work_to_annotation (object):
         if 'school' in dir(work):
             for i in range(len(work.school)):     
                 mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
-                mask_times = [ping_time[int(p)-1] for p in work.school[i].relativePingNumber]
+                mask_times = [ping_time[int(p)] for p in work.school[i].relativePingNumber]
                 if type(work.school[i].interpretations)==list:
                     region_channels=[]
                     region_category_names=[]
