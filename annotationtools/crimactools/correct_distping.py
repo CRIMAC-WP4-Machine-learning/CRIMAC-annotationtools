@@ -36,7 +36,7 @@ def correct_parquet(parquetfile):
     table1 = pq.read_table( parquetfile)
     t1 = table1.to_pandas()['distance']
     t2 = table1.to_pandas()['raw_file']
-    t3 = table1.to_pandas()['ping_time2']
+    t3 = table1.to_pandas()['ping_time']
 
     distdif=0.0010
     ferror = open(str(parquetfile) + '_error.csv', 'w' )
