@@ -19,9 +19,7 @@ import os.path
 from os import path
 import pyarrow.dataset as ds
  
-readfile=""
-if("-readfile" in  sys.argv):
-    readfile = str(sys.argv[sys.argv.index("-readfile") + 1])
+
 
 def fill_nan(A):
     inds = np.arange(A.shape[0])
@@ -338,4 +336,8 @@ def correct_parquet(parquetfile):
     ferror.close()
 
 
-correct_parquet(readfile)
+if __name__ == "__main__":
+    readfile = ""
+    if "-readfile" in sys.argv:
+        readfile = str(sys.argv[sys.argv.index("-readfile") + 1])
+    correct_parquet(readfile)
