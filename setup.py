@@ -35,7 +35,10 @@ opts = dict(name='annotationtools',
             package_data={'CRIMAC-annotationtools': [pjoin('data', '*')]},
             install_requires=INSTALL_REQUIRES,
             tests_require='tox',
-            scripts=['annotationtools/readers/convert_to_annotations.py'],
+            scripts=['annotationtools/readers/convert_to_annotations.py',
+                    'annotationtools/crimactools/correct_distping.py',
+                    'annotationtools/crimactools/parseworkfiles.py'
+                    ],
             dependency_links=['https://github.com/CRIMAC-WP4-Machine-learning/CRIMAC-preprocessing.git']
             )
 
