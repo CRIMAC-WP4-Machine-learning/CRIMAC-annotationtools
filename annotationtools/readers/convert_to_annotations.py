@@ -1058,7 +1058,39 @@ class work_to_annotation (object):
         proportion = []
         ID = []
         ChannelID = []
-
+        upperThreshold = []
+        lowerThreshold = []
+        
+        upperThresholdpings = []
+        lowerThresholdpings = [] 
+        
+        
+        # =============================================================================
+        # Process thresholds
+        # =============================================================================
+        
+        #print(raw_file_name +" upperThresholdActive  "+str(work.info.upperThresholdActive.start)+" "+str(np.datetime64(unix_to_datetime(work.info.upperThresholdActive.start))) +" "+str(work.info.upperThresholdActive.numberOfPings)+" "+str(work.info.upperThresholdActive.value)) 
+        
+        
+        
+        if( type(work.info.upperThreshold) != list): 
+            #print(raw_file_name +" upperThreshold  "+str(work.info.upperThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.upperThreshold.start)) )+" "+str(work.info.upperThreshold.numberOfPings)+" "+str(work.info.upperThreshold.value)) 
+            list1 = [work.info.upperThreshold.value] * work.info.upperThreshold.numberOfPings
+            upperThresholdpings=upperThresholdpings+list1
+        else:
+            for thr in  work.info.upperThreshold: 
+                #print(raw_file_name +" upperThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
+                list1 = [thr.value] * thr.numberOfPings
+                upperThresholdpings=upperThresholdpings+list1
+        if( type(work.info.lowerThreshold) != list): 
+            #print(raw_file_name +" lowerThreshold  "+str(work.info.lowerThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.lowerThreshold.start))) +" "+str(work.info.lowerThreshold.numberOfPings)+" "+str(work.info.lowerThreshold.value)) 
+            list1 = [work.info.lowerThreshold.value] * work.info.lowerThreshold.numberOfPings
+            lowerThresholdpings=lowerThresholdpings+list1
+        else:
+            for  thr in  work.info.lowerThreshold: 
+                #print(raw_file_name +" lowerThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
+                list1 = [thr.value] * thr.numberOfPings
+                lowerThresholdpings=lowerThresholdpings+list1
         
         
         
@@ -1082,8 +1114,9 @@ class work_to_annotation (object):
                         ID.append('exclude-'+str(i))
                         filenamelist.append(raw_file_name)
                         ping_index.append(indxp)
+                        upperThreshold.append(upperThresholdpings[indxp])
+                        lowerThreshold.append(lowerThresholdpings[indxp])
                         indxp=indxp+1
-
         
         
         
@@ -1111,6 +1144,8 @@ class work_to_annotation (object):
                                     ID.append('erased')
                                     ping_index.append( work.erased.masks[i].pingOffset[ii])
                                     filenamelist.append(raw_file_name)
+                                    upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
+                                    lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
                                 else:
                                     for chn in channel_ids[work.erased.masks[i].channelID-1]: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1123,6 +1158,8 @@ class work_to_annotation (object):
                                         ID.append('erased')
                                         ping_index.append( work.erased.masks[i].pingOffset[ii])
                                         filenamelist.append(raw_file_name)
+                                        upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
+                                        lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
                                         
                                         
         ####################################################################
@@ -1178,6 +1215,8 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
                                 filenamelist.append(raw_file_name)
+                                upperThreshold.append(upperThresholdpings[ work.school[i].relativePingNumber[ii] ])
+                                lowerThreshold.append(lowerThresholdpings[ work.school[i].relativePingNumber[ii] ])
                             else:
                                 if region_category_names == -1: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1190,6 +1229,8 @@ class work_to_annotation (object):
                                         ID.append('School-'+str(work.school[i].objectNumber))
                                         ping_index.append( work.school[i].relativePingNumber[ii])
                                         filenamelist.append(raw_file_name)
+                                        upperThreshold.append(upperThresholdpings[ work.school[i].relativePingNumber[ii] ])
+                                        lowerThreshold.append(lowerThresholdpings[ work.school[i].relativePingNumber[ii] ])
                                 else: 
                                     for i_chn in np.arange(len(region_category_names)):
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1202,6 +1243,8 @@ class work_to_annotation (object):
                                         ID.append('School-'+str(work.school[i].objectNumber))
                                         ping_index.append( work.school[i].relativePingNumber[ii])
                                         filenamelist.append(raw_file_name)
+                                        upperThreshold.append(upperThresholdpings[ work.school[i].relativePingNumber[ii] ])
+                                        lowerThreshold.append(lowerThresholdpings[ work.school[i].relativePingNumber[ii] ])
                         else:
                             chan_length=len(region_channels)
                             if(chan_length>len(region_category_names)):
@@ -1217,6 +1260,8 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
                                 filenamelist.append(raw_file_name)
+                                upperThreshold.append(upperThresholdpings[ int(work.school[i].relativePingNumber[ii] ) ])
+                                lowerThreshold.append(lowerThresholdpings[ int(work.school[i].relativePingNumber[ii] ) ])
                     
                     
                         
@@ -1340,6 +1385,8 @@ class work_to_annotation (object):
                                             proportion.append(float(region_category_proportions[sp_prop_c]))
                                             ping_index.append( work.layer[i].boundaries.ping[ii])
                                             filenamelist.append(raw_file_name)
+                                            upperThreshold.append(upperThresholdpings[ work.layer[i].boundaries.ping[ii] ])
+                                            lowerThreshold.append(lowerThresholdpings[ work.layer[i].boundaries.ping[ii] ])
                                         else: 
                                             for sp_prop_cc in range(len(sublist)): 
                                                 pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1353,6 +1400,8 @@ class work_to_annotation (object):
                                                 proportion.append(float(region_category_proportions[sp_prop_c][sp_prop_cc]))
                                                 ping_index.append( work.layer[i].boundaries.ping[ii])
                                                 filenamelist.append(raw_file_name)
+                                                upperThreshold.append(upperThresholdpings[ work.layer[i].boundaries.ping[ii] ])
+                                                lowerThreshold.append(lowerThresholdpings[ work.layer[i].boundaries.ping[ii] ])
                                         sp_prop_c+=1
                                     #sp_prop_c=0
                                     #for sp_prop in region_category_names[0]:
@@ -1462,7 +1511,7 @@ class work_to_annotation (object):
                 print("Correcting time by " + str(time_diff))
             else:
                 correct_time = np.hstack(pingTime)
-
+            
             df = pd.DataFrame(data={'ping_index': ping_index,
                                     'ping_time': correct_time,
                                     'mask_depth_upper':mask_depth_upper,
@@ -1472,8 +1521,10 @@ class work_to_annotation (object):
                                     'proportion':proportion,
                                     'object_id':ID,
                                     'channel_id':ChannelID,
+                                    'upperThreshold':upperThreshold,
+                                    'lowerThreshold':lowerThreshold,
                                     'raw_file':filenamelist})
-
+             
             # Convert if necessary
             self.df_ = df.astype({'ping_index': 'int64',
                                     'ping_time': 'datetime64[ns]',
@@ -1484,7 +1535,10 @@ class work_to_annotation (object):
                                     'proportion': 'float64',
                                     'object_id': str,
                                     'channel_id': str,
+                                    'upperThreshold': 'float64',
+                                    'lowerThreshold': 'float64',
                                     'raw_file': str})
         else:
             self.df_ = None
      
+
