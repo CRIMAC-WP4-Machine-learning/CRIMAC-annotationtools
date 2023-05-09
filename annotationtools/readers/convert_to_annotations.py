@@ -1082,6 +1082,12 @@ class work_to_annotation (object):
                     #print(raw_file_name +" upperThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
                     list1 = [thr.value] * thr.numberOfPings
                     upperThresholdpings=upperThresholdpings+list1
+        else:
+            list1 = [-1] * len(ping_time)
+            upperThresholdpings=upperThresholdpings+list1
+	    
+	    
+        if "upperThreshold" in dir(work):
             if( type(work.info.lowerThreshold) != list): 
                 #print(raw_file_name +" lowerThreshold  "+str(work.info.lowerThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.lowerThreshold.start))) +" "+str(work.info.lowerThreshold.numberOfPings)+" "+str(work.info.lowerThreshold.value)) 
                 list1 = [work.info.lowerThreshold.value] * work.info.lowerThreshold.numberOfPings
@@ -1091,6 +1097,9 @@ class work_to_annotation (object):
                     #print(raw_file_name +" lowerThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
                     list1 = [thr.value] * thr.numberOfPings
                     lowerThresholdpings=lowerThresholdpings+list1
+        else:
+            list1 = [-1] * len(ping_time)
+            lowerThresholdpings=lowerThresholdpings+list1
         
         
         
