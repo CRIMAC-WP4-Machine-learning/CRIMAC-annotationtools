@@ -1072,25 +1072,25 @@ class work_to_annotation (object):
         #print(raw_file_name +" upperThresholdActive  "+str(work.info.upperThresholdActive.start)+" "+str(np.datetime64(unix_to_datetime(work.info.upperThresholdActive.start))) +" "+str(work.info.upperThresholdActive.numberOfPings)+" "+str(work.info.upperThresholdActive.value)) 
         
         
-        
-        if( type(work.info.upperThreshold) != list): 
-            #print(raw_file_name +" upperThreshold  "+str(work.info.upperThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.upperThreshold.start)) )+" "+str(work.info.upperThreshold.numberOfPings)+" "+str(work.info.upperThreshold.value)) 
-            list1 = [work.info.upperThreshold.value] * work.info.upperThreshold.numberOfPings
-            upperThresholdpings=upperThresholdpings+list1
-        else:
-            for thr in  work.info.upperThreshold: 
-                #print(raw_file_name +" upperThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
-                list1 = [thr.value] * thr.numberOfPings
+        if "upperThreshold" in dir(work):
+            if( type(work.info.upperThreshold) != list): 
+                #print(raw_file_name +" upperThreshold  "+str(work.info.upperThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.upperThreshold.start)) )+" "+str(work.info.upperThreshold.numberOfPings)+" "+str(work.info.upperThreshold.value)) 
+                list1 = [work.info.upperThreshold.value] * work.info.upperThreshold.numberOfPings
                 upperThresholdpings=upperThresholdpings+list1
-        if( type(work.info.lowerThreshold) != list): 
-            #print(raw_file_name +" lowerThreshold  "+str(work.info.lowerThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.lowerThreshold.start))) +" "+str(work.info.lowerThreshold.numberOfPings)+" "+str(work.info.lowerThreshold.value)) 
-            list1 = [work.info.lowerThreshold.value] * work.info.lowerThreshold.numberOfPings
-            lowerThresholdpings=lowerThresholdpings+list1
-        else:
-            for  thr in  work.info.lowerThreshold: 
-                #print(raw_file_name +" lowerThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
-                list1 = [thr.value] * thr.numberOfPings
+            else:
+                for thr in  work.info.upperThreshold: 
+                    #print(raw_file_name +" upperThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
+                    list1 = [thr.value] * thr.numberOfPings
+                    upperThresholdpings=upperThresholdpings+list1
+            if( type(work.info.lowerThreshold) != list): 
+                #print(raw_file_name +" lowerThreshold  "+str(work.info.lowerThreshold.start)+" "+str(np.datetime64(unix_to_datetime(work.info.lowerThreshold.start))) +" "+str(work.info.lowerThreshold.numberOfPings)+" "+str(work.info.lowerThreshold.value)) 
+                list1 = [work.info.lowerThreshold.value] * work.info.lowerThreshold.numberOfPings
                 lowerThresholdpings=lowerThresholdpings+list1
+            else:
+                for thr in  work.info.lowerThreshold: 
+                    #print(raw_file_name +" lowerThreshold  "+str(thr.start)+" "+str(np.datetime64(unix_to_datetime(thr.start))) +" "+str(thr.numberOfPings)+" "+str(thr.value)) 
+                    list1 = [thr.value] * thr.numberOfPings
+                    lowerThresholdpings=lowerThresholdpings+list1
         
         
         
