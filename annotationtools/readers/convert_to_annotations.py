@@ -1224,8 +1224,8 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
                                 filenamelist.append(raw_file_name)
-                                upperThreshold.append(upperThresholdpings[ work.school[i].relativePingNumber[ii] ])
-                                lowerThreshold.append(lowerThresholdpings[ work.school[i].relativePingNumber[ii] ])
+                                upperThreshold.append(upperThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
+                                lowerThreshold.append(lowerThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
                             else:
                                 if region_category_names == -1: 
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1238,8 +1238,8 @@ class work_to_annotation (object):
                                         ID.append('School-'+str(work.school[i].objectNumber))
                                         ping_index.append( work.school[i].relativePingNumber[ii])
                                         filenamelist.append(raw_file_name)
-                                        upperThreshold.append(upperThresholdpings[ work.school[i].relativePingNumber[ii] ])
-                                        lowerThreshold.append(lowerThresholdpings[ work.school[i].relativePingNumber[ii] ])
+                                        upperThreshold.append(upperThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
+                                        lowerThreshold.append(lowerThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
                                 else: 
                                     for i_chn in np.arange(len(region_category_names)):
                                         pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
@@ -1252,8 +1252,8 @@ class work_to_annotation (object):
                                         ID.append('School-'+str(work.school[i].objectNumber))
                                         ping_index.append( work.school[i].relativePingNumber[ii])
                                         filenamelist.append(raw_file_name)
-                                        upperThreshold.append(upperThresholdpings[ work.school[i].relativePingNumber[ii] ])
-                                        lowerThreshold.append(lowerThresholdpings[ work.school[i].relativePingNumber[ii] ])
+                                        upperThreshold.append(upperThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
+                                        lowerThreshold.append(lowerThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
                         else:
                             chan_length=len(region_channels)
                             if(chan_length>len(region_category_names)):
