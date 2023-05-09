@@ -1,3 +1,4 @@
+
 from echolab2.instruments import EK80, EK60
 
 import sys
@@ -61,6 +62,8 @@ def append_to_parquet(df, pq_filepath, pq_obj=None):
         pa.field('proportion', pa.float64()),
         pa.field('object_id', pa.string()),
         pa.field('channel_id', pa.string()),
+        pa.field('upperThreshold', pa.float64()),
+        pa.field('lowerThreshold', pa.float64()),
         pa.field('raw_file', pa.string())
     ]
     df_schema = pa.schema(fields)
@@ -96,17 +99,18 @@ for filename in sorted_filenames:
                 exists_idx = os.path.isfile(idx_fname)
                 if exists_idx:
                     ann_obj = None
-                    try:
+                    #try
+                    if counter>-1:
                         work = readers.work_reader( work_fname )
                         ann_obj = readers.work_to_annotation(work, idx_fname)
-                    except Exception as e:
-                        exception_type, exception_object, exception_traceback = sys.exc_info()
-                        filename = exception_traceback.tb_frame.f_code.co_filename
-                        line_number = exception_traceback.tb_lineno
-                        #print("Exception type: ", exception_type)
-                        #print("File name: ", filename)
-                        #print("Line number: ", line_number)
-                        #print("ERROR3: - Something went wrong when reading the WORK file: " + str(work_fname) + " (" + str( e) + ")")
+                 #   except Exception as e:
+                 #       exception_type, exception_object, exception_traceback = sys.exc_info()
+                 #       filename = exception_traceback.tb_frame.f_code.co_filename
+                 #       line_number = exception_traceback.tb_lineno
+                 #       print("Exception type: ", exception_type)
+                 #       print("File name: ", filename)
+                 #       print("Line number: ", line_number)
+                 #       print("ERROR3: - Something went wrong when reading the WORK file: " + str(work_fname) + " (" + str( e) + ")")
 
                     if ann_obj is not None and ann_obj.df_ is not None:
                         df = ann_obj.df_
