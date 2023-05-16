@@ -559,10 +559,10 @@ if __name__ == '__main__':
             savefile = sys.argv[sys.argv.index("-savefile") + 1]
         if("-pings" in  sys.argv):
             pingchunk = int(sys.argv[sys.argv.index("-pings") + 1])
-        if("-parselayer" in  sys.argv):
-            parselayer = int(sys.argv[sys.argv.index("-parselayer") + 1])
+        if("-parselayers" in  sys.argv):
+            parselayers = int(sys.argv[sys.argv.index("-parselayers") + 1])
 
-        labelsZarr = WriteLabelsZarr(shipID=shipID, svzarrfile=svzarrfile, parquetfile=parquetfile, savefile=savefile, pingchunk=pingchunk , parselayers=parselayer)
+        labelsZarr = WriteLabelsZarr(shipID=shipID, svzarrfile=svzarrfile, parquetfile=parquetfile, savefile=savefile, pingchunk=pingchunk , parselayers=parselayers)
         labelsZarr.run()
     else:
         # Run the script from another Python file
