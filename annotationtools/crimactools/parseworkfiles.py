@@ -100,7 +100,7 @@ class ParseWorkFiles:
 
         self.pq_writer.close()
         # Read the Parquet file
-        table = pq.read_table(pq_filepath)
+        table = pq.read_table(self.pq_filepath)
         df= table.to_pandas()
         print (df)
 
