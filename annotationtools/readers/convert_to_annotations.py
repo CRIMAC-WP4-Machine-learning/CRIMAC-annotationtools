@@ -1274,7 +1274,7 @@ class work_to_annotation (object):
                                         lowerThreshold.append(lowerThresholdpings[  int(work.school[i].relativePingNumber[ii] )])
                                 else:
                                     for i_chn in np.arange(len(region_category_names)):
-                                        pingTime.append(np.datetime64(unix_to_datetime(mask_times[ii])))
+                                        pingTime.append(ping_timeConverter(mask_times[ii]))
                                         mask_depth_upper.append(float(min(m_depth[iii,:])))
                                         mask_depth_lower.append(float(max(m_depth[iii,:])))
                                         priority.append(2)
