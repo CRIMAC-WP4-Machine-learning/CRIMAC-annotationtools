@@ -612,10 +612,10 @@ class work_reader (object):
                         for d in range(len(pingtemp)):
                             if pingtemp[d] in maxdepth.keys():
                                 mindepth[pingtemp[d]] = depthtemp[d]
-                                print(pingtemp[d]+" min")
+                                #print(pingtemp[d]+" min")
                             else:
                                 maxdepth[pingtemp[d]] = depthtemp[d]
-                                print(pingtemp[d]+" max")
+                                #print(pingtemp[d]+" max")
 
                         for d in range(len(pingtemp)):
                             vmin = float(mindepth[pingtemp[d]])
@@ -772,7 +772,6 @@ class work_reader (object):
                 bound_keep[i].depths = [float(i) for i in depths]
                 if not (len(bound_keep[i].depths)) == (bound_keep[i].numberOfPings):
                     print('check boundries')
-#                    asdf
                 i+=1
 
 
@@ -1245,7 +1244,6 @@ class work_to_annotation (object):
                             if type(chn) != int:
                                 chn = chn[0]
                             if chn == -1 or chn == -1:
-                                print("schoolmask5")
                                 pingTime.append ( ping_timeConverter(mask_times[ii]))
                                 mask_depth_upper.append(float(min(m_depth[iii,:])))
                                 mask_depth_lower.append(float(max(m_depth[iii,:])))
