@@ -179,7 +179,12 @@ class WriteLabelsZarr:
                         #objn = objectsettings[1]
 
                         objn = objectsettings[1]
-
+                        try:
+                            # Attempt to convert objn to an integer
+                            objn = int(objn)
+                        except ValueError:
+                            # objn does not contain a valid integer, set it to -1
+                            objn = -1
                         # set the object number in lsssobject
                         lsssobject_tmp[pingnum,startpos:endpos] = objn
                         lsssobjecttype_tmp[pingnum,startpos:endpos] = type
