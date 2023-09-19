@@ -102,9 +102,12 @@ class ParseWorkFiles:
                     exists_idx = os.path.isfile(idx_fname)
                     
                     ann_obj = None
-                    try:
+                    try: 
+                        print("----------------")
+                        print(self.svzarr_file)
                         work = readers.work_reader( work_fname )
                         if self.svzarr_file.endswith(".zarr"):
+                            print("--- labels from zarr ---")
                             print(work_fname)
                             print(self.svzarr_file)
                             ann_obj = readers.work_to_annotation(work, idx_fname ,self.svzarr_file,False)
