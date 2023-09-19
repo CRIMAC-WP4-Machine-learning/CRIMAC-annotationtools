@@ -86,7 +86,8 @@ class ParseWorkFiles:
     def run(self):
         filenames = os.listdir(self.workdir)
         sorted_filenames = sorted(filenames)
-        
+        print("----------------")
+        print(self.svzarr_file)
         if self.svzarr_file.endswith(".zarr"):
             self.make_pingtime_rawfile_parquet( self.svzarr_file )
         
