@@ -72,6 +72,7 @@ class ParseWorkFiles:
         print(ping_time_array)
         # Create a pandas DataFrame
         df = pd.DataFrame({'raw_file': raw_file_array, 'ping_time': ping_time_array})
+        print(df)
         
         # Convert DataFrame to PyArrow Table
         table = pa.Table.from_pandas(df)
