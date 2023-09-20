@@ -1061,8 +1061,8 @@ class work_to_annotation (object):
             filter_column = "raw_file"
             filter_value = filenameraw 
             print(filter_column+" : "+  filter_value  )
-
-            filtered_df = df2.loc[df2[filter_column] == filter_value]
+            print(df2) 
+            filtered_df = df2.loc[df2[filter_column] == filter_value]          
             print(filtered_df)
             column_name = "ping_time"
             filtered_col = filtered_df[column_name]
