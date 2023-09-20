@@ -1060,9 +1060,12 @@ class work_to_annotation (object):
             df2= table2.to_pandas()
             filter_column = "raw_file"
             filter_value = filenameraw 
+            df2['raw_file'] = df2['raw_file'].apply(lambda x: x.decode())
+
             print(filter_column+" : "+  filter_value  )
-            print(df2) 
-            filtered_df = df2.loc[df2[filter_column] == filter_value]          
+            #print(df2) 
+            filtered_df = df2.loc[df2[filter_column] == filter_value] 
+             
             print(filtered_df)
             column_name = "ping_time"
             filtered_col = filtered_df[column_name]
