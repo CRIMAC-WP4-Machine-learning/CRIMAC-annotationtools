@@ -113,6 +113,7 @@ class ParseWorkFiles:
                             print(self.svzarr_file)
                             ann_obj = readers.work_to_annotation(work, idx_fname ,self.svzarr_file,False)
                         else:
+                            print("--- labels from raw ---")
                             if exists_idx:
                                 if exists_raw:
                                     ann_obj = readers.work_to_annotation(work, idx_fname )
