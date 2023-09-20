@@ -1068,7 +1068,8 @@ class work_to_annotation (object):
             filtered_col_rounded = filtered_col.dt.round("ms")
             ping_time = filtered_col_rounded.to_numpy()
             channel_ids = dataset.channel_id.values
-
+            print(ping_time)
+            print(channel_ids)
 
         
 
