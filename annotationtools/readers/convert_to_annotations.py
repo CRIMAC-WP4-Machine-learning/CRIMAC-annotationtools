@@ -1063,6 +1063,7 @@ class work_to_annotation (object):
             print(filter_column+" : "+  filter_value  )
 
             filtered_df = df2.loc[df2[filter_column] == filter_value]
+            print(filtered_df)
             column_name = "ping_time"
             filtered_col = filtered_df[column_name]
             filtered_col_rounded = filtered_col.dt.round("ms")
