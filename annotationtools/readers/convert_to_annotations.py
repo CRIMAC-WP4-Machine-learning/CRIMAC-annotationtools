@@ -1015,7 +1015,7 @@ class work_to_annotation (object):
         ping_time=list()
         # Get some info from the index file
         if svzarr is None:
-
+            print("using raw files for index")
             #Read the ping times
             fid = RawSimradFile(index_file, 'r')
             config = fid.read(1)
@@ -1051,10 +1051,11 @@ class work_to_annotation (object):
             self.raw_work_timediff = time_diff
         else:
             # Load the zarr file
+            print(svzarr)
             dataset = xr.open_zarr(svzarr)
             filenameraw = os.path.basename(raw_file)
             parquet_file = svzarr.replace("_sv.zarr", "_ping_time-raw_file.parquet")  
-            
+            print(parquet_file)
             table2 = pq.read_table(parquet_file)
             df2= table2.to_pandas()
             filter_column = "raw_file"
