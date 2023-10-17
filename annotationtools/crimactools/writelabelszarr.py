@@ -14,6 +14,9 @@ import sys
 import subprocess
 import os
 
+version = "1.0"
+
+
 #  to run on pallas.hi.no activate the crimac conda environment
 #  source /localscratch_hdd/tomasz/anaconda3/
 #  conda activate crimac
@@ -241,10 +244,9 @@ class WriteLabelsZarr:
             )
         )
         git_rev = os.getenv('COMMIT_SHA', 'XXXXXXXX')
-        try:
-            git_rev =  subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
-
-        except Exception as e:
+        #try:
+        #    git_rev =  subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+        #except Exception as e:
             print("error getting git revision")
         # Append version attributes
         ds4.attrs = dict(
@@ -252,6 +254,7 @@ class WriteLabelsZarr:
             description="CRIMAC-labels",
             time = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z',
             commit_sha = git_rev
+            scriptversion = version
         )
         ds4 = ds4.chunk({"category": 1, "range": ds4.range.shape[0], "ping_time": self.pingchunk})
         compressor = Blosc(cname='zstd', clevel=3, shuffle=Blosc.BITSHUFFLE)
