@@ -253,7 +253,7 @@ class WriteLabelsZarr:
             name = "CRIMAC-labels",
             description="CRIMAC-labels",
             time = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z',
-            commit_sha = git_rev
+            commit_sha = git_rev,
             scriptversion = version
         )
         ds4 = ds4.chunk({"category": 1, "range": ds4.range.shape[0], "ping_time": self.pingchunk})
