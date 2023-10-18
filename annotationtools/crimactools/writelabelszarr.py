@@ -247,7 +247,7 @@ class WriteLabelsZarr:
         #try:
         #    git_rev =  subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
         #except Exception as e:
-            print("error getting git revision")
+        #    print("error getting git revision")
         # Append version attributes
         ds4.attrs = dict(
             name = "CRIMAC-labels",
