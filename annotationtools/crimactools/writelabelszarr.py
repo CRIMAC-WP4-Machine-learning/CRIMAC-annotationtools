@@ -14,8 +14,8 @@ import sys
 import subprocess
 import os
 
-version = "1.0"
 
+version=os.getenv('VERSION_NUMBER')
 
 #  to run on pallas.hi.no activate the crimac conda environment
 #  source /localscratch_hdd/tomasz/anaconda3/
