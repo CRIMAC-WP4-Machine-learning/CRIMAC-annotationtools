@@ -19,6 +19,7 @@ COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 COPY CRIMAC_makelabelszarr.py /app/CRIMAC_makelabelszarr.py
+COPY annotationtools /app/annotationtools
 
 
 
