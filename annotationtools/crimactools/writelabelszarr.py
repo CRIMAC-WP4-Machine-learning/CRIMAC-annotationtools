@@ -13,7 +13,7 @@ import csv
 import sys
 import subprocess
 import os
-import pandas as pd
+
 
 version=os.getenv('VERSION_NUMBER')
 
@@ -309,28 +309,9 @@ class WriteLabelsZarr:
         print(totalpings)
         print(self.rangechunk)
 
-
         # open parquet file with annotations
-        table1 = pq.read_table(self.parquetfile)
+        table1 = pq.read_table( self.parquetfile)
         t1 = table1.to_pandas()
-
-        # Create an empty DataFrame to store the filtered results
-        filtered_results = pd.DataFrame(columns=t1.columns)
-
-        for channel_id in t1['channel_id'].unique():
-            channel_df = t1[t1['channel_id'] == channel_id]
-            
-            # Convert 'acoustic_category' to integers
-            channel_df['acoustic_category'] = channel_df['acoustic_category'].apply(lambda x: int(round(float(x))))
-            # Find the row with the highest 'acoustic_category' for this 'channel_id'
-            max_acoustic_category = channel_df['acoustic_category'].max()
-            filtered_row = channel_df[channel_df['acoustic_category'] == max_acoustic_category].iloc[0]
-            # Append the filtered row to the results DataFrame
-            filtered_results = filtered_results.append(filtered_row, ignore_index=True)
-
-        # Now, filtered_results contains the data with the highest 'acoustic_category' for each 'channel_id'
-
-
         print("___")
 
         self.allobject = {}
@@ -364,7 +345,7 @@ class WriteLabelsZarr:
         #fc = open(parquetfile2+".csv", 'w')
         #writercsv = csv.writer(fc)
 
-        for index, row in filtered_results.iterrows():
+        for index, row in t1.iterrows():
             pcount=pcount+1
 
             objectid=row['object_id']
@@ -560,15 +541,7 @@ class WriteLabelsZarr:
         fc.close()
 
 
-        existing_dataset = xr.open_dataset(self.svzarrfile)
 
-        csv_file_path = self.parquetfile+".csv"
-        metadata_df = pd.read_csv(csv_file_path)
-        metadata_array = metadata_df.to_numpy()
-
-        existing_dataset.attrs['annotation_coordinates'] = metadata_array
-
-        existing_dataset.to_zarr(self.svzarrfile, mode='a')
 
         zarr.consolidate_metadata(self.savefile )
         z2 = xr.open_zarr(self.savefile )
