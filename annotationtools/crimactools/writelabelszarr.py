@@ -13,7 +13,7 @@ import csv
 import sys
 import subprocess
 import os
-
+import pandas as pd
 
 version=os.getenv('VERSION_NUMBER')
 
@@ -412,7 +412,11 @@ class WriteLabelsZarr:
                 #put all annotations in a list and save the list in the dictionary for each pingtime key
                 if c1 > 0 or c1 == -1:
                     if str(row['ping_time'])[0:26] in self.workannot[3-p1]:
-                        self.workannot[3-p1][str(row['ping_time'])[0:26]].append(row)
+                        if c1 > 0 :
+                            annotlist = []
+                            annotlist.append(row)
+                            self.workannot[3-p1][str(row['ping_time'])[0:26]] = annotlist
+                            #self.workannot[3-p1][str(row['ping_time'])[0:26]].append(row)
                     else:
                         annotlist = []
                         annotlist.append(row)
@@ -421,7 +425,10 @@ class WriteLabelsZarr:
                 else:
                     # save exclude annotation in its own dictionary  , pingtime key
                     if str(row['ping_time'])[0:26] in self.workannot[3]:
-                        self.workannot[3][str(row['ping_time'])[0:26]].append(row)
+                        #self.workannot[3][str(row['ping_time'])[0:26]].append(row)
+                        annotlist = []
+                        annotlist.append(row)
+                        self.workannot[3][str(row['ping_time'])[0:26]] = annotlist
                     else:
                         annotlist = []
                         annotlist.append(row)
@@ -539,16 +546,20 @@ class WriteLabelsZarr:
             print(self.allobject[ob])
             writercsv.writerow(self.allobject[ob])
         fc.close()
-
-
-
-
+        
+        
+        
         zarr.consolidate_metadata(self.savefile )
+
+        existing_dataset = xr.open_dataset(self.savefile)
+        csv_file_path =  self.parquetfile+".csv"
+        metadata_df = pd.read_csv(csv_file_path)
+        metadata_array = metadata_df.to_numpy()
+        existing_dataset.attrs['annotation_coordinates'] = metadata_array
+        existing_dataset.to_zarr(self.savefile, mode='a')
+
         z2 = xr.open_zarr(self.savefile )
         print(z2)
-
-
-
 
 
 
