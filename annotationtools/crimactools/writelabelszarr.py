@@ -552,7 +552,7 @@ class WriteLabelsZarr:
         zarr.consolidate_metadata(self.savefile )
         
         #existing_dataset = xr.open_dataset(self.savefile)
-        existing_dataset = xr.open_zarr(self.savefile, mode='a')
+        existing_dataset = xr.open_zarr(self.savefile)
         
         csv_file_path = self.parquetfile + ".csv"
         metadata_df = pd.read_csv(csv_file_path)
