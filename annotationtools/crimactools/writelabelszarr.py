@@ -558,9 +558,8 @@ class WriteLabelsZarr:
         metadata_df = pd.read_csv(csv_file_path)
         metadata_array = metadata_df.to_numpy()
         existing_dataset.attrs['annotation_coordinates'] = metadata_array
-        
+        existing_dataset.to_zarr(self.savefile, mode='a')
         existing_dataset.close()
-        #existing_dataset.to_zarr(self.savefile, mode='a')
         
         zarr.consolidate_metadata(self.savefile )
         z2 = xr.open_zarr(self.savefile )
