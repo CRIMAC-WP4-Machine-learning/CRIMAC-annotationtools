@@ -19,4 +19,3 @@ scipy
 matplotlib
 psutil
 git+https://github.com/CRIMAC-WP4-Machine-learning/pyEcholab.git@RHT-EK80#egg=pyEcholab
-
