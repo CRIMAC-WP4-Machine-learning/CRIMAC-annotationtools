@@ -75,13 +75,4 @@ def writelabels(rawdir, workdir, outdir, OUTPUT_NAME, shipID='shipID', parselaye
     labelszarrfile= outdir + '/' + OUTPUT_NAME +"_labels.zarr"
     labelsZarr = WriteLabelsZarr(shipID=shipID, svzarrfile=svzarrfile, parquetfile=pq_filepath, savefile=labelszarrfile, pingchunk=40000,  parselayers=0)
     labelsZarr.run()
-        
-if __name__ == '__main__':
-    runtype = os.getenv('OUTPUT_TYPE', 'zarr')
-    if(runtype ==  "labels.zarr"):
-        writelabels(rawdir = os.path.expanduser("/datain"),
-              workdir = os.path.expanduser("/workin"),
-              outdir = os.path.expanduser("/dataout"),
-              OUTPUT_NAME = os.getenv('OUTPUT_NAME', 'out'),
-              shipID=os.getenv('shipID', 'shipID') ,
-              parselayers=os.getenv('parselayers', '0'))
+
