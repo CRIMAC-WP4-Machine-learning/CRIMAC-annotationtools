@@ -231,11 +231,11 @@ class WriteLabelsZarr:
         print("dataset")
         ds4 = xr.Dataset(
             data_vars=dict(
-                annotation=(["category","ping_time", "range"], lsss),
-                object=(["ping_time", "range"], lsssobject),
-                objecttype=(["ping_time", "range"], lsssobjecttype),
-                upperthr=(["ping_time" ], lsssupperthr),
-                lowerthr=(["ping_time" ], lssslowerthr),
+                annotation=(["category","ping_time", "range"], lsss.data),
+                object=(["ping_time", "range"], lsssobject.data),
+                objecttype=(["ping_time", "range"], lsssobjecttype.data),
+                upperthr=(["ping_time" ], lsssupperthr.data),
+                lowerthr=(["ping_time" ], lssslowerthr.data),
             ),
             coords=dict(
                 category=self.category,
