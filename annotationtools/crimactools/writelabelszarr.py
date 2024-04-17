@@ -110,7 +110,7 @@ class WriteLabelsZarr:
                     up = float(str(row['mask_depth_upper'])) - ( float(raw_heave[pingnum])+float(raw_transducer[0][pingnum]) )
                     lo = float(str(row['mask_depth_lower'])) - ( float(raw_heave[pingnum])+float(raw_transducer[0][pingnum]) )
                     #print(str(len(rawpinglist))+" "+str(pingnum)+"  "+str(up)+" "+str(lo) +" "+str(raw_heave[pingnum])+" "+str(raw_transducer[0][pingnum]))
-                    scale = (float(len(data_range)) / 500.0)
+                    scale = (float(len(data_range)) / max(data_range))
                     up2 = up * scale
                     lo2 = lo * scale
                     #rangepos = int(up2 - 5)
