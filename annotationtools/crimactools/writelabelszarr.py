@@ -413,14 +413,15 @@ class WriteLabelsZarr:
                 if c1 > 0 or c1 == -1:
                     if str(row['ping_time'])[0:26] in self.workannot[3-p1]:
                         if c1 > 0 :
+                            #annotlist = []
+                            #annotlist.append(row)
+                            #self.workannot[3-p1][str(row['ping_time'])[0:26]] = annotlist
+                            self.workannot[3-p1][str(row['ping_time'])[0:26]].append(row)
+                    else:
+                        if c1 > 0 :
                             annotlist = []
                             annotlist.append(row)
                             self.workannot[3-p1][str(row['ping_time'])[0:26]] = annotlist
-                            #self.workannot[3-p1][str(row['ping_time'])[0:26]].append(row)
-                    else:
-                        annotlist = []
-                        annotlist.append(row)
-                        self.workannot[3-p1][str(row['ping_time'])[0:26]] = annotlist
                     acoustic_category[str(row['acoustic_category'])] = str(row['priority'])
                 else:
                     # save exclude annotation in its own dictionary  , pingtime key
