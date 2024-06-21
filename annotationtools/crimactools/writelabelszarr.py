@@ -205,7 +205,7 @@ class WriteLabelsZarr:
                 #now = time.time()
                 #print(len(rows))
                 #print("time : {0} seconds  ".format(now - program_starts))
-            type = type - 1
+                type = type - 1
             pingnum = pingnum + 1
 
         print("dask")
