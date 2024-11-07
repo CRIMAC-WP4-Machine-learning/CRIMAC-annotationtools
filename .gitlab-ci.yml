@@ -1,0 +1,30 @@
+stages:
+  - build
+#  - deploy
+ 
+variables:
+  DOCKER_IMAGE: crimac-annotationtools
+ 
+before_script:
+  # Ensure Docker is available
+  - docker --version
+ 
+build:
+  stage: build
+  tags: 
+    - latest
+  script:
+    # Check out the latest code for the main branch
+    - echo "Checking out code for branch/tag:" $CI_COMMIT_REF_NAME
+    - git fetch origin
+    - git checkout $CI_COMMIT_REF_NAME
+    - git pull origin $CI_COMMIT_REF_NAME
+ 
+    # Build the Docker image
+    - docker build --network=host -t $DOCKER_IMAGE .
+ 
+#deploy:
+#  stage: deploy
+#  script:
+#    # Run the Docker container
+#    - docker run --rm $DOCKER_IMAGE python your_script.py
