@@ -1,14 +1,18 @@
 stages:
   - build
-#  - deploy
+  - release
+  - deploy
  
 variables:
-  DOCKER_IMAGE: crimac-annotationtools
- 
+  #DOCKER_IMAGE: crimac-preprocessor-korona
+  #IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
 before_script:
   # Ensure Docker is available
   - docker --version
- 
+  - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
 build:
   stage: build
   tags: 
@@ -21,10 +25,34 @@ build:
     - git pull origin $CI_COMMIT_REF_NAME
  
     # Build the Docker image
-    - docker build --network=host -t $DOCKER_IMAGE .
- 
-#deploy:
-#  stage: deploy
-#  script:
-#    # Run the Docker container
-#    - docker run --rm $DOCKER_IMAGE python your_script.py
+    #- docker build --network=host -t $DOCKER_IMAGE .
+    - docker build --network=host -t $CONTAINER_TEST_IMAGE .
+
+    #- docker push $DOCKER_IMAGE
+    - docker push $CONTAINER_TEST_IMAGE
+
+release:
+  stage: release
+  tags: 
+    - latest
+  script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual
+
+deploy:
+  stage: deploy
+  tags: 
+    - latest
+  script:
+    # Run the Docker container
+    # - docker run --rm $DOCKER_IMAGE python your_script.py
+    - echo "Deployment of the container. N/A at the moment."
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+  when: manual
