@@ -96,7 +96,7 @@ class ParseWorkFiles:
             work_fname=os.path.join(self.workdir, filename)
             if work_fname.endswith(".work"):
                 print (filename)
-                raw_fname =os.path.join(self.workdir, filename.replace("work","raw"))
+                raw_fname =os.path.join(self.rawdir, filename.replace("work","raw"))
                 exists_work = os.path.isfile(work_fname)
                 exists_raw = os.path.isfile(raw_fname)
                 if exists_work:
