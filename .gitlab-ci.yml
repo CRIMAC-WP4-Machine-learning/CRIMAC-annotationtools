@@ -50,8 +50,8 @@ build:
 
     - docker push $CONTAINER_TEST_IMAGE
 
-release:
-  stage: release
+tag:
+  stage: tag
   tags: 
     - latest
   script:
@@ -72,6 +72,17 @@ release:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   when: manual
+
+release:
+  stage: release
+  script:
+    - echo "Creating release for version $(cat VERSION)"
+  release:
+    name: "Release v$(cat VERSION)"
+    tag_name: "v$(cat VERSION)"
+    description: "Release of version $(cat VERSION)"
+  only:
+    - main
 
 deploy:
   stage: deploy
