@@ -1,6 +1,7 @@
 stages:
   - update_version
   - build
+  - tag
   - release
   - deploy
  
