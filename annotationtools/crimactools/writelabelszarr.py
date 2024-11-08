@@ -35,12 +35,20 @@ class WriteLabelsZarr:
     def write_annot(self,rawzarrfile,allobjects,start,end,rangeend,savefile,writemode  ):
         pingerror = 0
         pingok  = 0
-        z = xr.open_zarr(rawzarrfile, chunks={'ping_time':'50000'})
-        data1 = z.sv.isel(frequency=slice(0, 1), ping_time=slice(start, end), range=slice(0, rangeend))
+
+        if self.svzarrfile.split('.')[-1] == 'zarr':
+            z = xr.open_zarr(self.svzarrfile, chunks={'ping_time':'50000'})
+        elif self.svzarrfile.split('.')[-1] == 'nc':
+            z = xr.open_mfdataset(self.svzarrfile, chunks={'ping_time':'50000'})
+
+        #z = xr.open_zarr(rawzarrfile, chunks={'ping_time':'50000'})
+        #data1 = z.sv.isel(frequency=slice(0, 1), ping_time=slice(start, end), range=slice(0, rangeend))
         #array with pingtime
-        data_ping = np.asarray(data1.ping_time)
+        #data_ping = np.asarray(data1.ping_time)
+        data_ping = np.asarray(z.ping_time)
         #array with range depth
-        data_range = np.asarray(data1.range)
+        #data_range = np.asarray(data1.range)
+        data_range = np.asarray(z.range)
         dataheave = z.heave.isel( ping_time=slice(start, end))
         datatransducer = z.transducer_draft.isel(frequency=slice(0, 1), ping_time=slice(start, end))
 
@@ -110,7 +118,8 @@ class WriteLabelsZarr:
                     up = float(str(row['mask_depth_upper'])) - ( float(raw_heave[pingnum])+float(raw_transducer[0][pingnum]) )
                     lo = float(str(row['mask_depth_lower'])) - ( float(raw_heave[pingnum])+float(raw_transducer[0][pingnum]) )
                     #print(str(len(rawpinglist))+" "+str(pingnum)+"  "+str(up)+" "+str(lo) +" "+str(raw_heave[pingnum])+" "+str(raw_transducer[0][pingnum]))
-                    scale = (float(len(data_range)) / 500.0)
+                    #scale = (float(len(data_range)) / 500.0)
+                    scale = (float(len(data_range)) / max(data_range))
                     up2 = up * scale
                     lo2 = lo * scale
                     #rangepos = int(up2 - 5)
@@ -211,7 +220,6 @@ class WriteLabelsZarr:
         print("dask")
         lsssupperthr_dask = dask.from_array(lsssupperthr_tmp ,chunks=(-1 ))
         lssslowerthr_dask = dask.from_array(lssslowerthr_tmp ,chunks=(-1 ))
-
         lsss_dask = dask.from_array(lsss_tmp, chunks=(-1,-1,15))
         print("xarray")
         lsss = xr.DataArray(name="lsss", data=lsss_dask,
@@ -229,13 +237,15 @@ class WriteLabelsZarr:
         lssslowerthr = xr.DataArray(name="lssslowerthr", data=lssslowerthr_dask, dims=['ping_time'],
                         coords={'ping_time': data_ping })
         print("dataset")
+        
+        # lsss object has error in it.
         ds4 = xr.Dataset(
             data_vars=dict(
-                annotation=(["category","ping_time", "range"], lsss),
-                object=(["ping_time", "range"], lsssobject),
-                objecttype=(["ping_time", "range"], lsssobjecttype),
-                upperthr=(["ping_time" ], lsssupperthr),
-                lowerthr=(["ping_time" ], lssslowerthr),
+                annotation=(lsss.dims, lsss.data),
+                object=(["ping_time", "range"], lsssobject.data),
+                objecttype=(["ping_time", "range"], lsssobjecttype.data),
+                upperthr=(["ping_time"], lsssupperthr.data),
+                lowerthr=(["ping_time"], lssslowerthr.data)
             ),
             coords=dict(
                 category=self.category,
@@ -277,17 +287,21 @@ class WriteLabelsZarr:
 
     def run(self):
         # open raw data zarr to get the dimensions
-        z = xr.open_zarr(self.svzarrfile, chunks={'ping_time':'50000'})
-
-        totalpings = z.sv.shape[1]
-        self.rangechunk = z.sv.shape[2]
+        if self.svzarrfile.split('.')[-1] == 'zarr':
+            z = xr.open_zarr(self.svzarrfile, chunks={'ping_time':'50000'})
+        elif self.svzarrfile.split('.')[-1] == 'nc':
+            z = xr.open_mfdataset(self.svzarrfile, chunks={'ping_time':'50000'})
+        
+        totalpings = z.ping_time.shape[0]
+        self.rangechunk = z.range.shape[0]
         fc2 = open(self.parquetfile+"pings.csv", 'w')
 
-        data11 = z.sv.isel(frequency=slice(0, 1), ping_time=slice(0, totalpings), range=slice(0, self.rangechunk))
+        #data11 = z.sv.isel(frequency=slice(0, 1), ping_time=slice(0, totalpings), range=slice(0, self.rangechunk))
         #array with pingtime
-        data_ping11 = np.asarray(data11.ping_time )
+        #data_ping11 = np.asarray(data11.ping_time )
+        data_ping11 = np.asarray(z.ping_time)
 
-        d6=[]
+        d6 = []
         for pingx in data_ping11 :
             p6 =pingx
             if str(pingx).endswith("9")  :
