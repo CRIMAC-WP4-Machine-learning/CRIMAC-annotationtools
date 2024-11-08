@@ -75,6 +75,8 @@ tag:
 
 release:
   stage: release
+  tags: 
+    - latest
   script:
     - echo "Creating release for version $(cat VERSION)"
   release:
