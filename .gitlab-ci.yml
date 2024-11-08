@@ -76,14 +76,9 @@ tag:
 
 release:
   stage: release
-  tags: 
-    - latest
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
-    - echo "Creating release for version $(cat VERSION)"
-  release:
-    name: "Release v$(cat VERSION)"
-    tag_name: "v$(cat VERSION)"
-    description: "Release of version $(cat VERSION)"
+    - release-cli create --name "Release v$(cat VERSION)" --tag-name "v$(cat VERSION)" --description "Release of version $(cat VERSION)"
   only:
     - main
 
