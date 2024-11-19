@@ -25,4 +25,4 @@ COPY annotationtools /app/annotationtools
 
 WORKDIR /app
 
-CMD ["python3", "/app/CRIMAC_makelabelszarr.py"]
+CMD ["sh", "-c", "python3 -u /app/CRIMAC_makelabelszarr.py >> /dataout/log_annotation.txt 2>&1"]
