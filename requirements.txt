@@ -9,6 +9,7 @@ dask[dataframe]==2021.10.0
 dask[delayed] 
 dask[distributed]
 lxml
+xmltodict
 pytz
 future
 netCDF4
