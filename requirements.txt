@@ -1,7 +1,5 @@
-numpy==1.21.0
-xmltodict
 xarray==0.16.0
-numpy==1.20.3
+numpy==1.21.0
 zarr==2.8.1
 pandas==1.5.3
 pyarrow==8.0.0
