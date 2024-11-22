@@ -1054,7 +1054,7 @@ class work_to_annotation (object):
             print(svzarr)
             dataset = xr.open_zarr(svzarr)
             filenameraw = os.path.basename(raw_file)
-            filenameraw = filenameraw[:-3] 
+            #filenameraw = filenameraw[:-3] 
             parquet_file = svzarr.replace("_sv.zarr", "_ping_time-raw_file.parquet")  
             print(parquet_file)
             table2 = pq.read_table(parquet_file)
