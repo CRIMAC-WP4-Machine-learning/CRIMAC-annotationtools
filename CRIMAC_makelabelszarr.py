@@ -63,17 +63,19 @@ from numcodecs import Blosc
 # script version as a string. We need to decide what numbers we should use and how to change it depending on changes in the script
 version=os.getenv('VERSION_NUMBER')
 
-      
 
 def writelabels(rawdir, workdir, outdir, OUTPUT_NAME, shipID='shipID', parselayers='0'):
     svzarrfile= outdir + '/' + OUTPUT_NAME  +"_sv.zarr"
     pq_filepath=outdir + '/' + OUTPUT_NAME  +"_labels.parquet"
-    parser = ParseWorkFiles(rawdir=rawdir, workdir=workdir, pq_filepath=pq_filepath,svzarr_file=svzarrfile)
+    parser = ParseWorkFiles(rawdir=rawdir, workdir=workdir, pq_filepath=pq_filepath,
+                            svzarr_file=svzarrfile)
     parser.run()
     
     
     labelszarrfile= outdir + '/' + OUTPUT_NAME +"_labels.zarr"
-    labelsZarr = WriteLabelsZarr(shipID=shipID, svzarrfile=svzarrfile, parquetfile=pq_filepath, savefile=labelszarrfile, pingchunk=40000,  parselayers=0)
+    labelsZarr = WriteLabelsZarr(shipID=shipID, svzarrfile=svzarrfile,
+                                 parquetfile=pq_filepath, savefile=labelszarrfile,
+                                 pingchunk=40000,  parselayers=0)
     labelsZarr.run()
         
 if __name__ == '__main__':
@@ -85,3 +87,17 @@ if __name__ == '__main__':
               OUTPUT_NAME = os.getenv('OUTPUT_NAME', 'out'),
               shipID=os.getenv('shipID', 'shipID') ,
               parselayers=os.getenv('parselayers', '0'))
+
+
+'''
+workdir = os.path.join(os.getenv('CRIMAC'),'2022','S2022611','ACOUSTIC','LSSS','WORK')
+outdir = os.path.join(os.getenv('CRIMACSCRATCH'),'2022','S2022611','ACOUSTIC','GRIDDED')
+os.path.exists(workdir)
+os.path.exists(outdir)
+rawdir = ''#/mnt/c/DATAscratch/crimac-scratch/2022/S2022611/ACOUSTIC/GRIDDED'
+shipID = '1172'
+OUTPUT_TYPE = 'labels.zarr'
+OUTPUT_NAME = 'S2022611'
+'''
+
+
