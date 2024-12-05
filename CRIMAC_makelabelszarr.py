@@ -22,45 +22,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # Set a the version here
 __version__ = 0.2
 
-'''
-from echolab2.instruments import EK80, EK60
-
-import sys
-import subprocess
-import re
-import dask
-import scipy.ndimage
-import numpy as np
-import xarray as xr
-import zarr as zr
-'''
 import os.path
-import shutil
-import glob
-import ntpath
-import datetime
-import gc
-import netCDF4
-
-from scipy import interpolate
-from psutil import virtual_memory
-
-
-from annotationtools.crimactools.correct_distping import correct_parquet
 from annotationtools.crimactools.parseworkfiles import ParseWorkFiles
 from annotationtools.crimactools.writelabelszarr import WriteLabelsZarr
-from annotationtools import readers
-
-from rechunker.api import rechunk
-import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
-
-from matplotlib import pyplot as plt, colors
-from matplotlib.colors import LinearSegmentedColormap, Colormap
-import math
-from numcodecs import Blosc
-
 
 # script version as a string. We need to decide what numbers we should
 # use and how to change it depending on changes in the script
@@ -97,24 +61,3 @@ if __name__ == '__main__':
                     OUTPUT_NAME = os.getenv('OUTPUT_NAME', 'out'),
                     shipID = os.getenv('shipID', 'shipID') ,
                     parselayers = os.getenv('parselayers', '1'))
-
-
-
-#workin = os.path.join(os.getenv('CRIMAC'),'2022','S2022611','ACOUSTIC','LSSS','WORK')
-#outdir = os.path.join(os.getenv('CRIMACSCRATCH'),'2022','S2022611','ACOUSTIC','GRIDDED')
-
-datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/D2019006/ACOUSTIC/EK80/EK80_RAWDATA'
-dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/D2019006/ACOUSTIC/GRIDDED'
-workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/D2019006/ACOUSTIC/LSSS/WORK'
-
-
-os.path.exists(datain)
-os.path.exists(workin)
-os.path.exists(dataout)
-#os.path.exists(sv_file)
-
-shipID = '1172'
-OUTPUT_NAME = 'D2019006'
-
-
-

@@ -13,7 +13,7 @@ workdirs = [d for d in Path(crimac_scratch,
                             'test_data').iterdir() if d.is_dir()]
 testvalues = {}
 
-for test_set in workdirs[0:1]:
+for test_set in workdirs:
     workin = Path(test_set, 'ACOUSTIC/LSSS/WORK')
     if workin.exists():
         survey = str(test_set).split('/')[-1]
@@ -46,12 +46,12 @@ for test_set in workdirs[0:1]:
             subprocess.run(command, check=True)
             sv = xr.open_zarr(Path(dataout, survey+'_sv.zarr'))
             labels = xr.open_zarr(Path(dataout, survey+'_labels.zarr'))
-            labels.annotation.plot()
-            testvalues[survey] = float((sv.sv*labels.annotation).sum(dim=[
-                'ping_time','range','frequency']).values)
+            testvalues[survey] = 'OK'
+            #testvalues[survey] = float((sv.sv*labels.annotation).sum(dim=[
+            #    'ping_time', 'range', 'frequency']).values)
         except subprocess.CalledProcessError as e:
             print(f"Command failed with error: {e}")
-            testvalues[survey] = np.nan
+            testvalues[survey] = 'Failed'
     else:
         print('No workfile for '+survey)
 
