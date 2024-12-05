@@ -1,9 +1,9 @@
 # CRIMAC-annotationtools
-This repository contatin tools to read, convert and write annotatons from fisheries acoustics. A python representation of the annotations are defined as an annotation structure.
+
+This repository contatin tools to read, convert and write annotatons from the LSSS "work" files. A python representation of the annotations are defined as an annotation structure.
 
 The main obejctive is to have test code that defines the annotations data structure in the ICES format, and code to read and write the format. It is our test implementation of the proposed standard, and the discussions at the ICES publication page should guide our development:
 https://github.com/ices-publications/SONAR-netCDF4
-
 
 
 ## Python representation of the data
