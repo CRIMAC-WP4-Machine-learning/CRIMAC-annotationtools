@@ -2,14 +2,18 @@
 from pathlib import Path
 import subprocess
 import os
+import xarray as xr
+import numpy as np
+import json
 
 crimac_scratch = os.getenv('CRIMACSCRATCH')
 
 # List of test data
 workdirs = [d for d in Path(crimac_scratch,
                             'test_data').iterdir() if d.is_dir()]
+testvalues = {}
 
-for test_set in workdirs:
+for test_set in workdirs[0:1]:
     workin = Path(test_set, 'ACOUSTIC/LSSS/WORK')
     if workin.exists():
         survey = str(test_set).split('/')[-1]
@@ -40,9 +44,23 @@ for test_set in workdirs:
         # Run the command
         try:
             subprocess.run(command, check=True)
+            sv = xr.open_zarr(Path(dataout, survey+'_sv.zarr'))
+            labels = xr.open_zarr(Path(dataout, survey+'_labels.zarr'))
+            labels.annotation.plot()
+            testvalues[survey] = float((sv.sv*labels.annotation).sum(dim=[
+                'ping_time','range','frequency']).values)
         except subprocess.CalledProcessError as e:
             print(f"Command failed with error: {e}")
+            testvalues[survey] = np.nan
     else:
         print('No workfile for '+survey)
 
+with open("run_test_updated.json", "w") as file:
+    json.dump(testvalues, file)
 
+#with open("run_test.json", "r") as file:
+#    testvalues_0 = json.load(file)
+
+# Print test results
+#for key in testvalues.keys():
+#    print(testvalues[key]-testvalues_0[key])

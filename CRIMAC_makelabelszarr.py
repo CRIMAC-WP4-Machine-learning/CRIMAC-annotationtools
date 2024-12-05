@@ -22,6 +22,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # Set a the version here
 __version__ = 0.2
 
+'''
 from echolab2.instruments import EK80, EK60
 
 import sys
@@ -32,6 +33,7 @@ import scipy.ndimage
 import numpy as np
 import xarray as xr
 import zarr as zr
+'''
 import os.path
 import shutil
 import glob
@@ -60,44 +62,59 @@ import math
 from numcodecs import Blosc
 
 
-# script version as a string. We need to decide what numbers we should use and how to change it depending on changes in the script
-version=os.getenv('VERSION_NUMBER')
+# script version as a string. We need to decide what numbers we should
+# use and how to change it depending on changes in the script
+version = os.getenv('VERSION_NUMBER')
 
 
-def writelabels(rawdir, workdir, outdir, OUTPUT_NAME, shipID='shipID', parselayers='0'):
-    svzarrfile= outdir + '/' + OUTPUT_NAME  +"_sv.zarr"
-    pq_filepath=outdir + '/' + OUTPUT_NAME  +"_labels.parquet"
-    parser = ParseWorkFiles(rawdir=rawdir, workdir=workdir, pq_filepath=pq_filepath,
-                            svzarr_file=svzarrfile)
+def writelabels(datain, workin, dataout, OUTPUT_NAME,
+                shipID='shipID', parselayers='1'):
+    
+    sv_file = dataout + '/' + OUTPUT_NAME  + "_sv.zarr"
+    pq_filepath = dataout + '/' + OUTPUT_NAME  + "_labels.parquet"
+    parser = ParseWorkFiles(rawdir=datain,
+                            workdir=workin,
+                            pq_filepath=pq_filepath,
+                            svzarr_file=sv_file)
     parser.run()
     
-    
-    labelszarrfile= outdir + '/' + OUTPUT_NAME +"_labels.zarr"
-    labelsZarr = WriteLabelsZarr(shipID=shipID, svzarrfile=svzarrfile,
-                                 parquetfile=pq_filepath, savefile=labelszarrfile,
-                                 pingchunk=40000,  parselayers=0)
+    label_file = dataout + '/' + OUTPUT_NAME + "_labels.zarr"
+    labelsZarr = WriteLabelsZarr(shipID=shipID,
+                                 svzarrfile=sv_file,
+                                 parquetfile=pq_filepath,
+                                 savefile=label_file,
+                                 pingchunk=40000,
+                                 parselayers=1)
     labelsZarr.run()
-        
+
+
 if __name__ == '__main__':
     runtype = os.getenv('OUTPUT_TYPE', 'zarr')
-    if(runtype ==  "labels.zarr"):
-        writelabels(rawdir = os.path.expanduser("/datain"),
-              workdir = os.path.expanduser("/workin"),
-              outdir = os.path.expanduser("/dataout"),
-              OUTPUT_NAME = os.getenv('OUTPUT_NAME', 'out'),
-              shipID=os.getenv('shipID', 'shipID') ,
-              parselayers=os.getenv('parselayers', '0'))
+    if (runtype ==  "labels.zarr"):
+        writelabels(datain = os.path.expanduser("/datain"),
+                    workin = os.path.expanduser("/workin"),
+                    dataout = os.path.expanduser("/dataout"),
+                    OUTPUT_NAME = os.getenv('OUTPUT_NAME', 'out'),
+                    shipID = os.getenv('shipID', 'shipID') ,
+                    parselayers = os.getenv('parselayers', '1'))
 
 
-'''
-workdir = os.path.join(os.getenv('CRIMAC'),'2022','S2022611','ACOUSTIC','LSSS','WORK')
-outdir = os.path.join(os.getenv('CRIMACSCRATCH'),'2022','S2022611','ACOUSTIC','GRIDDED')
-os.path.exists(workdir)
-os.path.exists(outdir)
-rawdir = ''#/mnt/c/DATAscratch/crimac-scratch/2022/S2022611/ACOUSTIC/GRIDDED'
+
+#workin = os.path.join(os.getenv('CRIMAC'),'2022','S2022611','ACOUSTIC','LSSS','WORK')
+#outdir = os.path.join(os.getenv('CRIMACSCRATCH'),'2022','S2022611','ACOUSTIC','GRIDDED')
+
+datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/D2019006/ACOUSTIC/EK80/EK80_RAWDATA'
+dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/D2019006/ACOUSTIC/GRIDDED'
+workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/D2019006/ACOUSTIC/LSSS/WORK'
+
+
+os.path.exists(datain)
+os.path.exists(workin)
+os.path.exists(dataout)
+#os.path.exists(sv_file)
+
 shipID = '1172'
-OUTPUT_TYPE = 'labels.zarr'
-OUTPUT_NAME = 'S2022611'
-'''
+OUTPUT_NAME = 'D2019006'
+
 
 
