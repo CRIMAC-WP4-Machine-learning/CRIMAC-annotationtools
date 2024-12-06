@@ -1012,7 +1012,7 @@ class work_to_annotation (object):
         # Use round towards zero
         decimal.getcontext().rounding = decimal.ROUND_DOWN
         raw_file = index_file[0: -3]+"raw"
-        ping_time=list()
+        ping_time = list()
         # Get some info from the index file
         if svzarr is None:
             print("using raw files for index")
@@ -1054,11 +1054,11 @@ class work_to_annotation (object):
             print(svzarr)
             dataset = xr.open_zarr(svzarr)
             filenameraw = os.path.basename(raw_file)
-            #filenameraw = filenameraw[:-3] 
+            #filenameraw = filenameraw[:-3]
             parquet_file = svzarr.replace("_sv.zarr", "_ping_time-raw_file.parquet")  
             print(parquet_file)
             table2 = pq.read_table(parquet_file)
-            df2= table2.to_pandas()
+            df2 = table2.to_pandas()
             filter_column = "raw_file"
             filter_value = filenameraw 
             #df2['raw_file'] = df2['raw_file'].apply(lambda x: x.decode())
@@ -1067,14 +1067,14 @@ class work_to_annotation (object):
             #print(df2) 
             filtered_df = df2.loc[df2[filter_column] == filter_value] 
              
-            print(filtered_df)
+            #print(filtered_df)
             column_name = "ping_time"
             filtered_col = filtered_df[column_name]
             filtered_col_rounded = filtered_col.dt.round("ms")
             ping_time = filtered_col_rounded.to_numpy()
             channel_ids = dataset.channel_id.values
-            print(ping_time)
-            print(channel_ids)
+            #print(ping_time)
+            #print(channel_ids)
 
         
 
