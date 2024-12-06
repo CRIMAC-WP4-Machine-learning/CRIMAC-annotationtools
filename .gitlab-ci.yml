@@ -1,0 +1,99 @@
+stages:
+  - update_version
+  - build
+  - tag
+  - release
+  - deploy
+ 
+variables:
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+before_script:
+  # Ensure Docker is available
+  - docker --version
+  - echo $CI_REGISTRY_PASSWORD | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+update_version:
+  stage: update_version
+  tags: 
+    - latest
+  script:
+    - git config --global user.email "ci@hi.no"
+    - git config --global user.name "CI Bot"
+    - git fetch $CI_REPOSITORY_URL
+    - git checkout $CI_COMMIT_REF_NAME
+    - git pull $CI_REPOSITORY_URL $CI_COMMIT_REF_NAME
+    - chmod +x update_version.sh
+    - ./update_version.sh
+    - git add VERSION
+
+    # "[ci skip]" and "-o ci.skip" prevent a CI trigger loop
+    - git commit -m "[ci skip] Bump version to $(cat VERSION)"
+    - git push -o ci.skip https://root:$PROJECT_ACCESS_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git HEAD:main
+
+  only:
+    - main
+
+build:
+  stage: build
+  tags: 
+    - latest
+  script:
+    # Check out the latest code for the branchwith changes
+    - echo "Checking out code for branch/tag:" $CI_COMMIT_REF_NAME
+    - git fetch origin
+    - git checkout $CI_COMMIT_REF_NAME
+    - git pull origin $CI_COMMIT_REF_NAME
+
+    - VERSION=$(cat VERSION)
+    - echo "Build the Docker image with version $VERSION and commit_sha = $CI_COMMIT_SHA"
+    - docker build --network=host -t $CONTAINER_TEST_IMAGE --build-arg version_number=$VERSION --build-arg commit_sha=$CI_COMMIT_SHA .
+
+    - docker push $CONTAINER_TEST_IMAGE
+
+tag:
+  stage: tag
+  tags: 
+    - latest
+  script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_RELEASE_IMAGE
+
+    - git fetch origin
+    - git checkout $CI_COMMIT_REF_NAME
+    - git pull origin $CI_COMMIT_REF_NAME
+    # "[ci skip]" and "-o ci.skip" prevent a CI trigger loop
+    - VERSION=$(cat VERSION)
+    - echo "Creating a new release tag:" " v$VERSION"
+
+    - git tag -a "v$VERSION" -m "Release version $VERSION"
+    - git push https://root:$PROJECT_ACCESS_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git HEAD:main --tags
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual
+
+release:
+  stage: release
+  tags: 
+    - latest
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "main"
+  script:
+    - release-cli create --name "Release v$(cat VERSION)" --tag-name "v$(cat VERSION)" --description "Release of version $(cat VERSION)"
+
+deploy:
+  stage: deploy
+  tags: 
+    - latest
+  script:
+    # Run the Docker container
+    # - docker run --rm $DOCKER_IMAGE python your_script.py
+    - echo "Deployment of the container. N/A at the moment."
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+  when: manual
