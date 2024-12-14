@@ -1086,9 +1086,14 @@ class work_to_annotation (object):
         if "exclude" in dir(work):
             for i in range(len(work.exclude.start_time)):
                 for chn in channel_ids:
-                    start_time= (work.exclude.start_time[i])
-                    end_time= ping_time[int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
-                    indxp=0;
+                    # The start time in the work object is in Unix time
+                    start_time = np.datetime64(int(
+                        work.exclude.start_time[i] * 1e6), 'us')
+                    end_time = ping_time[int(np.where(
+                        start_time == ping_time)[0])+int(
+                            work.exclude.numOfPings[i])-1]
+                    indxp = 0
+                    
                     for p in ping_time[(ping_time>=start_time) & (ping_time<=end_time)]:
                         pingTime.append( ping_timeConverter(p)) 
                         mask_depth_upper.append(0.0)
