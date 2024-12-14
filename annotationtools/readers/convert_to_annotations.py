@@ -642,28 +642,35 @@ class work_reader (object):
         ####################################################################
         # Processing the Buble correction information
         ####################################################################
-        if type(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])!=list:
-            bubble = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
-            self.info.bubble = structtype()
-            self.info.bubble.start = float(bubble['@start'])
-            self.info.bubble.numberOfPings = int(bubble['@numberOfPings'])
-            self.info.bubble.CorrectionValue = float(bubble['@bubbleCorrectionValue'])
-        else:
-            self.info.bubble = [None] * len(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])
-            i_buble = 0
-            for bubble in doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']:
-                self.info.bubble[i_buble] = structtype()
-                self.info.bubble[i_buble].start = float(bubble['@start'])
-                self.info.bubble[i_buble].numberOfPings = int(bubble['@numberOfPings'])
-                self.info.bubble[i_buble].CorrectionValue = float(bubble['@bubbleCorrectionValue'])
-                i_buble+=1
 
+        # Tries if the bubble correction is complete
+        try:
+            bubble = doc['regionInterpretation']['bubbleCorrectionRanges'][
+                'timeRange']
 
+            # Ensure bubble is a list (if it's not already)
+            if not isinstance(bubble, list):
+                bubble = [bubble]
+
+            self.info.bubble = [None] * len(bubble)
+
+            for i_bubble, _bubble in enumerate(bubble):
+                self.info.bubble[i_bubble] = structtype()
+                self.info.bubble[i_bubble].start = float(_bubble['@start'])
+                self.info.bubble[i_bubble].numberOfPings = int(_bubble[
+                    '@numberOfPings'])
+                self.info.bubble[i_bubble].CorrectionValue = float(_bubble[
+                    '@bubbleCorrectionValue'])
+
+        except KeyError as e:
+            print(f"ERROR: Missing key in LSSS work file :: {e}")
+        except TypeError as e:
+            print(f"ERROR: Type mismatch in LSSS work file :: {e}")
+        except Exception as e:
+            print(f"ERROR: An unexpected error occurred while processing the bubble correction: {e}")
 
         with open(work_filename) as fd:
             doc = xmltodict.parse(fd.read())
-
-
 
         ####################################################################
         # Processing the thresholding information
@@ -1119,7 +1126,7 @@ class work_to_annotation (object):
                 for i in range(len(work.erased.masks)):
                     if 'depth' in dir(work.erased.masks[i]):
                         mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
-                        mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
+                        mask_times = [ping_time[int(p-1)] for p in work.erased.masks[i].pingOffset ]
                         for ii in range(len(mask_times)):
                             m_depth = mask_depth[ii]
                             m_depth=m_depth.reshape(-1,2)
@@ -1161,8 +1168,12 @@ class work_to_annotation (object):
         
         if 'school' in dir(work):
             for i in range(len(work.school)):
-                mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
-                mask_times = [ping_time[int(p)] for p in work.school[i].relativePingNumber]
+                mask_depth=[list(a) for a in zip(work.school[i].min_depth,
+                                                 work.school[i].max_depth)]
+                
+                # NB Ping number start at 1. Subtract one for indexing.
+                mask_times = [ping_time[int(p-1)] for p in work.school[
+                    i].relativePingNumber]
                 
                 if type(work.school[i].interpretations)==list:
                     region_channels=[]
@@ -1256,11 +1267,10 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
                                 filenamelist.append(raw_file_name)
-                                upperThreshold.append(upperThresholdpings[ int(work.school[i].relativePingNumber[ii] ) ])
-                                lowerThreshold.append(lowerThresholdpings[ int(work.school[i].relativePingNumber[ii] ) ])
-
-
-
+                                upperThreshold.append(upperThresholdpings[
+                                    int(work.school[i].relativePingNumber[ii]-1)])
+                                lowerThreshold.append(lowerThresholdpings[
+                                    int(work.school[i].relativePingNumber[ii]-1)])
 
 
 
@@ -1274,7 +1284,7 @@ class work_to_annotation (object):
 
                     if "boundaries" in dir(work.layer[i]):
                         mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
-                        mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+                        mask_times = [ping_time[int(p-1)] for p in work.layer[i].boundaries.ping]
 
 
                         region_channels = []
