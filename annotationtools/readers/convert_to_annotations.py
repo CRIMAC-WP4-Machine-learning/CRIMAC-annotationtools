@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-
-
-#Load som packages
 import numpy as np
-import xmltodict,os, struct, sys
-from datetime import datetime
-from echolab2.instruments import EK60, EK80
+import xmltodict
+import os
+import sys
+#from datetime import datetime
+#from echolab2.instruments import EK60, EK80
 import pandas as pd
-from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
-from echolab2.instruments.util.simrad_raw_file import RawSimradFile
+#from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
+#from echolab2.instruments.util.simrad_raw_file import RawSimradFile
 import decimal
-import numpy as np
+#import numpy as np
 import xarray as xr
-import pyarrow as pa
+#import pyarrow as pa
 import pyarrow.parquet as pq
 
 class rename_LSSS_vocab_to_ICES_vocab (object):
@@ -193,7 +192,7 @@ class work_reader (object):
 
         #msg for user
         print('Reading:' + work_filename)
-
+        self.info.work_filename = os.path.basename(work_filename)
 
 
 
@@ -981,105 +980,51 @@ class work_reader (object):
                     i+=1
 
 
-
-
-
-
-
-
-
 class work_to_annotation (object):
 
-
-    def __init__(self, work, index_file, svzarr=None , correct_time = True):
+    def __init__(self, work, svzarr=None , correct_time = True):
 
         def depthConverter(depth):
-            #Helper function to convert the LSSS depth notation to more general
+            # Helper function to convert the LSSS depth to general notation
             depth = depth.split(' ')
             for idx in range(len(depth)):
-                if idx>0:
-                    depth[idx]=float(depth[idx-1])+float(depth[idx])
+                if idx > 0:
+                    depth[idx] = float(depth[idx-1])+float(depth[idx])
                 else:
-                    depth[idx]=float(depth[idx])
+                    depth[idx] = float(depth[idx])
 
-            return(depth)
+            return depth
     
         def ping_timeConverter(ping_time):
             if isinstance(ping_time, np.float64):
                 ping_time = np.datetime64(unix_to_datetime(ping_time))
-            return(ping_time)
+            return ping_time
 
         # Use round towards zero
         decimal.getcontext().rounding = decimal.ROUND_DOWN
-        raw_file = index_file[0: -3]+"raw"
         ping_time = list()
-        # Get some info from the index file
-        if svzarr is None:
-            print("using raw files for index")
-            #Read the ping times
-            fid = RawSimradFile(index_file, 'r')
-            config = fid.read(1)
-            fid2 = RawSimradFile(raw_file, 'r')
-            config = fid2.read(1)
-
-            channel_ids = list(config['configuration'].keys())#data.channel_ids
-            timestamp = config['timestamp'].timestamp()
-            ping_time_IDX = list()
-
-            run = True
-            while run:
-                try:
-                    idx_datagram = fid.read(1)
-                    p_time = nt_to_unix((int(idx_datagram['low_date']), int(idx_datagram['high_date'])), return_datetime=False)
-                    #the lines below may be an option for some older files
-                    #raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)
-                    #p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
-                    ping_time_IDX.append(float(round(decimal.Decimal(p_time), 3)))
-                except Exception as e:
-                    run = False
-                    exception_type, exception_object, exception_traceback = sys.exc_info()
-                    filename = exception_traceback.tb_frame.f_code.co_filename
-                    line_number = exception_traceback.tb_lineno
-                    #print("ERROR: - Something went wrong when reading the WORK file RAW index"+ str(raw_file))
-                    #print("Exception type: ", exception_type)
-                    #print("File name: ", filename)
-                    #print("Line number: ", line_number)
-                    #print("ERROR: - Something went wrong when reading the WORK file: " + str(raw_file) + " (" + str( e) + ")")
-
-            ping_time = np.array(ping_time_IDX)
-            time_diff = np.datetime64(unix_to_datetime(ping_time[0])) - np.datetime64(unix_to_datetime(float(round(decimal.Decimal(timestamp), 3))))
-            self.raw_work_timediff = time_diff
-        else:
-            # Load the zarr file
-            print(svzarr)
-            dataset = xr.open_zarr(svzarr)
-            filenameraw = os.path.basename(raw_file)
-            #filenameraw = filenameraw[:-3]
-            parquet_file = svzarr.replace("_sv.zarr", "_ping_time-raw_file.parquet")  
-            print(parquet_file)
-            table2 = pq.read_table(parquet_file)
-            df2 = table2.to_pandas()
-            filter_column = "raw_file"
-            filter_value = filenameraw 
-            #df2['raw_file'] = df2['raw_file'].apply(lambda x: x.decode())
-
-            print(filter_column+" : "+  filter_value  )
-            #print(df2) 
-            filtered_df = df2.loc[df2[filter_column] == filter_value] 
-             
-            #print(filtered_df)
-            column_name = "ping_time"
-            filtered_col = filtered_df[column_name]
-            filtered_col_rounded = filtered_col.dt.round("ms")
-            ping_time = filtered_col_rounded.to_numpy()
-            channel_ids = dataset.channel_id.values
-            #print(ping_time)
-            #print(channel_ids)
-
         
+        # Load the zarr file
+        dataset = xr.open_zarr(svzarr)
 
-        raw_file_name = os.path.basename(raw_file )
+        # Load the ping time file
+        parquet_file = svzarr.replace('_sv.zarr',
+                                      '_ping_time-raw_file.parquet')
         
+        table2 = pq.read_table(parquet_file)
+        df2 = table2.to_pandas()
+        
+        # Extract the ping-time for the current work file
+        filter_column = "raw_file"
+        raw_file_name =  work.info.work_filename.split('.')[-2]+'.raw'
+        filtered_df = df2.loc[df2[filter_column] == raw_file_name] 
+        
+        column_name = "ping_time"
+        filtered_col = filtered_df[column_name]
+        filtered_col_rounded = filtered_col.dt.round("ms")
+        ping_time = filtered_col_rounded.to_numpy()
+        channel_ids = dataset.channel_id.values
+
         #For bookkeeping
         mask_depth_upper = []
         mask_depth_lower = []
@@ -1550,37 +1495,38 @@ class work_to_annotation (object):
         # =============================================================================
 
         if len(pingTime) > 0:
-            if correct_time:
-                correct_time = np.hstack(pingTime) - time_diff
-                print("Correcting time by " + str(time_diff))
-            else:
-                correct_time = np.hstack(pingTime)
-
+            correct_time = np.hstack(pingTime)
+            # Do the layer has upper/lowerThreshold?
+            if len(upperThreshold) == 0:
+                upperThreshold = [np.nan]*len(ping_index)
+            if len(upperThreshold) == 0:
+                lowerThreshold = [np.nan]*len(ping_index)
+            
             df = pd.DataFrame(data={'ping_index': ping_index,
                                     'ping_time': correct_time,
-                                    'mask_depth_upper':mask_depth_upper,
-                                    'mask_depth_lower':mask_depth_lower,
-                                    'priority':priority,
-                                    'acoustic_category':acousticCat,
-                                    'proportion':proportion,
-                                    'object_id':ID,
-                                    'channel_id':ChannelID,
-                                    'upperThreshold':upperThreshold,
-                                    'lowerThreshold':lowerThreshold,
-                                    'raw_file':filenamelist})
+                                    'mask_depth_upper': mask_depth_upper,
+                                    'mask_depth_lower': mask_depth_lower,
+                                    'priority': priority,
+                                    'acoustic_category': acousticCat,
+                                    'proportion': proportion,
+                                    'object_id': ID,
+                                    'channel_id': ChannelID,
+                                    'upperThreshold': upperThreshold,
+                                    'lowerThreshold': lowerThreshold,
+                                    'raw_file': filenamelist})
 
             # Convert if necessary
             self.df_ = df.astype({'ping_index': 'int64',
-                                    'ping_time': 'datetime64[ns]',
-                                    'mask_depth_upper': 'float64',
-                                    'mask_depth_lower': 'float64',
-                                    'priority': 'int64',
-                                    'acoustic_category': str,
-                                    'proportion': 'float64',
-                                    'object_id': str,
-                                    'channel_id': str,
-                                    'upperThreshold': 'float64',
-                                    'lowerThreshold': 'float64',
-                                    'raw_file': str})
+                                  'ping_time': 'datetime64[ns]',
+                                  'mask_depth_upper': 'float64',
+                                  'mask_depth_lower': 'float64',
+                                  'priority': 'int64',
+                                  'acoustic_category': str,
+                                  'proportion': 'float64',
+                                  'object_id': str,
+                                  'channel_id': str,
+                                  'upperThreshold': 'float64',
+                                  'lowerThreshold': 'float64',
+                                  'raw_file': str})
         else:
             self.df_ = None

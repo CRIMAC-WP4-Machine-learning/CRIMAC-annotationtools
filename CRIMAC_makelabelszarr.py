@@ -34,15 +34,16 @@ version = os.getenv('VERSION_NUMBER')
 def writelabels(datain, workin, dataout, OUTPUT_NAME,
                 shipID='shipID', parselayers='1'):
     
-    sv_file = dataout + '/' + OUTPUT_NAME  + "_sv.zarr"
-    pq_filepath = dataout + '/' + OUTPUT_NAME  + "_labels.parquet"
-    parser = ParseWorkFiles(rawdir=datain,
+    sv_file = os.path.join(dataout, OUTPUT_NAME+'_sv.zarr')
+    print('sv file exists:'+str(os.path.exists(sv_file)))
+    pq_filepath = os.path.join(dataout, OUTPUT_NAME+'_labels.parquet')
+
+    parser = ParseWorkFiles(svzarr_file=sv_file,
                             workdir=workin,
-                            pq_filepath=pq_filepath,
-                            svzarr_file=sv_file)
+                            pq_filepath=pq_filepath)
     parser.run()
     
-    label_file = dataout + '/' + OUTPUT_NAME + "_labels.zarr"
+    label_file = os.path.join(dataout, OUTPUT_NAME+'_labels.zarr')
     labelsZarr = WriteLabelsZarr(shipID=shipID,
                                  svzarrfile=sv_file,
                                  parquetfile=pq_filepath,
@@ -50,7 +51,6 @@ def writelabels(datain, workin, dataout, OUTPUT_NAME,
                                  pingchunk=40000,
                                  parselayers=1)
     labelsZarr.run()
-
 
 if __name__ == '__main__':
     runtype = os.getenv('OUTPUT_TYPE', 'zarr')
