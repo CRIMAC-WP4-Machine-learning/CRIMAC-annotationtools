@@ -578,10 +578,20 @@ class work_reader (object):
 
 
                     #Print the interpretation mask of each school
+                    # There is a work file test case where there
+                    # is no school['pingMask']. i=13, S2014807.
+                    # Hence the ("'pingMask' in schools" logic in
+                    # the if statement below
+                    #if i == 13:
+                    #    import pdb
+                    #    print(i)
+                    #    pdb.set_trace()
+                    
+                    
                     self.school[i].relativePingNumber=list()
                     self.school[i].min_depth = list()
                     self.school[i].max_depth = list()
-                    if parseelement == 1:
+                    if parseelement == 1 & ('pingMask' in schools): # This is the additional logic
                         if type(schools['pingMask'])==list:
                             for ping in schools['pingMask']:
                                 depth = ping['#text'].split()
