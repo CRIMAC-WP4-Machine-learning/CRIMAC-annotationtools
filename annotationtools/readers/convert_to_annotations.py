@@ -1146,34 +1146,34 @@ class work_to_annotation (object):
                             # Loop over multiple erased regions for one ping
                             for iii in range(m_depth.shape[0]):
                                 if isinstance(work.erased.masks[i].channelID, int):
+                                    # Is single instance, convert to list for loop to work
+                                    chid = [channel_ids[work.erased.masks[i].channelID-1]]
+                                else:
+                                    chid = channel_ids[work.erased.masks[i].channelID-1]
+                                    
+                                # Loop over channels if the mask is applied to more than one channel
+                                for chn in channel_ids[work.erased.masks[i].channelID-1]:
+                                    # Append to annotations
                                     pingTime.append(ping_timeConverter(
                                         mask_times[ii]))
-                                    mask_depth_upper.append(min(m_depth[iii,:]))
-                                    mask_depth_lower.append(max(m_depth[iii,:]))
+                                    mask_depth_upper.append(min(
+                                        m_depth[iii, :]))
+                                    mask_depth_lower.append(max(
+                                        m_depth[iii, :]))
                                     priority.append(1)
                                     acousticCat.append(0)
                                     proportion.append(1.0)
-                                    ChannelID.append(channel_ids[work.erased.masks[i].channelID-1])
+                                    ChannelID.append(chn)
                                     ID.append('erased')
-                                    ping_index.append(work.erased.masks[i].pingOffset[ii])
+                                    ping_index.append(
+                                        work.erased.masks[i].pingOffset[ii])
                                     filenamelist.append(raw_file_name)
-                                    upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
-                                    lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
-                                else:
-                                    error('Multiple channels!!!!')
-                                    for chn in channel_ids[work.erased.masks[i].channelID-1]:
-                                        pingTime.append(ping_timeConverter(mask_times[ii]))
-                                        mask_depth_upper.append(min(m_depth[iii,:]))
-                                        mask_depth_lower.append(max(m_depth[iii,:]))
-                                        priority.append(1)
-                                        acousticCat.append(0)
-                                        proportion.append(1.0)
-                                        ChannelID.append(chn)
-                                        ID.append('erased')
-                                        ping_index.append( work.erased.masks[i].pingOffset[ii])
-                                        filenamelist.append(raw_file_name)
-                                        upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
-                                        lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
+                                    upperThreshold.append(
+                                        upperThresholdpings[int(
+                                            work.erased.masks[i].pingOffset[ii]) ])
+                                    lowerThreshold.append(
+                                        lowerThresholdpings[int(
+                                            work.erased.masks[i].pingOffset[ii]) ])
 
 
         ####################################################################
