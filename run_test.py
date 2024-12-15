@@ -72,7 +72,15 @@ with open("run_test.json", "r") as file:
 
 # Print test results
 for key in testvalues.keys():
+    if testvalues[key]['checksum'] is np.nan:
+        d = 'nan'
+    if testvalues[key]['checksum'] == 0:
+        d = str(testvalues_0[key]['checksum']-testvalues[key][
+            'checksum'])
+    else:
+        d = str(np.round(100*(testvalues_0[key]['checksum']-testvalues[key][
+            'checksum'])/testvalues[key]['checksum']))+'%'
+
     print(key+': original checksum: '+str(
         testvalues_0[key]['checksum']) + ', Updated checksum: ' + str(
-            testvalues_0[key]['checksum']), ', diff: ' + testvalues_0[key][
-                'checksum']-testvalues[key]['checksum'])
+            testvalues[key]['checksum']), ', diff: ' + d)
