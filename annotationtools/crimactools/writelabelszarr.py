@@ -37,54 +37,61 @@ class WriteLabelsZarr:
         pingok  = 0
 
         if self.svzarrfile.split('.')[-1] == 'zarr':
-            z = xr.open_zarr(self.svzarrfile, chunks={'ping_time':'50000'})
+            z = xr.open_zarr(self.svzarrfile,
+                             chunks={'ping_time': '50000'})
         elif self.svzarrfile.split('.')[-1] == 'nc':
-            z = xr.open_mfdataset(self.svzarrfile, chunks={'ping_time':'50000'})
+            z = xr.open_mfdataset(self.svzarrfile,
+                                  chunks={'ping_time': '50000'})
 
-        #z = xr.open_zarr(rawzarrfile, chunks={'ping_time':'50000'})
-        #data1 = z.sv.isel(frequency=slice(0, 1), ping_time=slice(start, end), range=slice(0, rangeend))
-        #array with pingtime
-        #data_ping = np.asarray(data1.ping_time)
-        data_ping = np.asarray(z.ping_time)
-        #array with range depth
+        # Array with pingtime
+        
+        # should I slice this too?:
+        data_ping = np.asarray(z.ping_time.isel(ping_time=slice(start, end)))
+        
+        # Array with range depth
         #data_range = np.asarray(data1.range)
         data_range = np.asarray(z.range)
-        dataheave = z.heave.isel( ping_time=slice(start, end))
-        datatransducer = z.transducer_draft.isel(frequency=slice(0, 1), ping_time=slice(start, end))
+        dataheave = z.heave.isel(ping_time=slice(start, end))
+        datatransducer = z.transducer_draft.isel(frequency=slice(0, 1),
+                                                 ping_time=slice(start, end))
 
         raw_heave = np.asarray(dataheave)
         raw_transducer = np.asarray(datatransducer)
 
-        rawpinglist = np.asarray(data_ping)
+        rawpinglist = np.asarray(data_ping) # Time per ping from "raw" or zarr
 
         lsss_tmp = np.zeros([len(self.category),len(data_ping), len(data_range)] , dtype=np.float32)
         lsssobject_tmp = np.zeros([len(data_ping), len(data_range)], dtype=int)
         lsssobjecttype_tmp = np.zeros([len(data_ping), len(data_range)], dtype=int)
 
-        lsssupperthr_tmp= np.zeros([len(data_ping) ], dtype=np.float32)
-        lssslowerthr_tmp= np.zeros([len(data_ping) ], dtype=np.float32)
+        lsssupperthr_tmp = np.zeros([len(data_ping) ], dtype=np.float32)
+        lssslowerthr_tmp = np.zeros([len(data_ping) ], dtype=np.float32)
 
-        objectnum={}
-        objectnumcounter=1
+        #objectnum={}
+        #objectnumcounter=1
 
         pingnum = 0
         hits = 0
-        # loop through pings in chunk
+        # loop through pings for this chunk
         for pingx in rawpinglist:
             p6 =pingx
+            '''
             #print(p6)
             #print(".............")
+            # I think this only applies when not using zarr as input?:
             if str(pingx).endswith("9")  :
                 p6 =pingx +np.timedelta64(1, 'ns')
             if str(pingx).endswith("8")  :
                 p6 =pingx +np.timedelta64(2, 'ns')
             if str(pingx).endswith("7")  :
                 p6 =pingx +np.timedelta64(3, 'ns')
-
+            '''
+            
             p3 = str(p6).replace('T', ' ')[0:26]
             p3sec = str(pingx).replace('T', ' ')[0:19]
             #program_starts = time.time()
-
+            
+            
             # Start with priority 3 : layers
             # then priority 2 boxes
             # in the end overite alle category layers with exclude priority 1
@@ -107,13 +114,12 @@ class WriteLabelsZarr:
                     hits = hits+1
                     pingok = pingok + 1
                     del work[p3sec]
-                    print(p3sec+" ping len 19 "  )
+                    #print(p3sec+" ping len 19 "  )
 
 
                 # for each annotation registered for the ping set the correct value for each category
                 # between mask_depth_upper and mask_depth_lower
                 for row in rows:
-                    #print(pingnum)
                     #print("----")
                     up = float(str(row['mask_depth_upper'])) - ( float(raw_heave[pingnum])+float(raw_transducer[0][pingnum]) )
                     lo = float(str(row['mask_depth_lower'])) - ( float(raw_heave[pingnum])+float(raw_transducer[0][pingnum]) )
@@ -399,7 +405,7 @@ class WriteLabelsZarr:
                     row2.append(obj_cat)
 
                     self.allobject[firstrow['object_id']]=row2
-                    print("  __  "+ firstrow['object_id'])
+                    #print("  __  "+ firstrow['object_id'])
                     #writercsv.writerow(row2)
                     #if int(float(lastrow['acoustic_category']))==12:
                     #test1=[ "@", lastrow['object_id'],lastrow['ping_time'],lastrow['acoustic_category'],lastrow['proportion'],obj_cat]
@@ -515,13 +521,18 @@ class WriteLabelsZarr:
             if i==0:
                 # first write
                 print(str(i) + " 1 " + str(i + self.pingchunk))
-                self.write_annot(self.svzarrfile, self.allobject, i, (i + self.pingchunk),self.rangechunk, self.savefile, 0)
+                self.write_annot(self.svzarrfile, self.allobject, i, (
+                    i + self.pingchunk), self.rangechunk, self.savefile, 0)
             else:
                 # append to file
                 print(str(i) + " x " + str(i + self.pingchunk))
-                self.write_annot(self.svzarrfile, self.allobject, i, (i + self.pingchunk),self.rangechunk, self.savefile, 1)
+                self.write_annot(self.svzarrfile, self.allobject, i, (
+                    i + self.pingchunk),self.rangechunk, self.savefile, 1)
             i += self.pingchunk
-            print("remaining annotation pings "+str(len(self.workannot[0])) +" "+str(len(self.workannot[1])) +" "+str(len(self.workannot[2])) +" "+str(len(self.workannot[3])))
+            print("remaining annotation pings "+str(len(
+                self.workannot[0]))+" "+str(len(self.workannot[
+                    1]))+" "+str(len(self.workannot[2])) +" "+str(
+                        len(self.workannot[3])))
 
         print("---")
         for v in self.workannot[0]:
