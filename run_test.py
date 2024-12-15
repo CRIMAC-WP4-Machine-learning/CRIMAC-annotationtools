@@ -46,21 +46,33 @@ for test_set in workdirs:
             subprocess.run(command, check=True)
             sv = xr.open_zarr(Path(dataout, survey+'_sv.zarr'))
             labels = xr.open_zarr(Path(dataout, survey+'_labels.zarr'))
-            testvalues[survey] = 'OK'
-            #testvalues[survey] = float((sv.sv*labels.annotation).sum(dim=[
-            #    'ping_time', 'range', 'frequency']).values)
+
+            _testvalue = (sv.sv.sum(dim='frequency')*labels.annotation).sum(
+                dim=['range', 'ping_time', 'category'])
+            testvalues[survey] = {'Status': 'OK',
+                                  'commit_sha': labels.commit_sha,
+                                  'sv_commit_sha': sv.git_commit,
+                                  'checksum': float(_testvalue.values)}
         except subprocess.CalledProcessError as e:
             print(f"Command failed with error: {e}")
             testvalues[survey] = 'Failed'
+            testvalues[survey] = {'Status': 'Failes',
+                                  'commit_sha': labels.commit_sha,
+                                  'sv_commit_sha': sv.git_commit,
+                                  'checksum': np.nan}
+
     else:
         print('No workfile for '+survey)
 
 with open("run_test_updated.json", "w") as file:
     json.dump(testvalues, file)
 
-#with open("run_test.json", "r") as file:
-#    testvalues_0 = json.load(file)
+with open("run_test.json", "r") as file:
+    testvalues_0 = json.load(file)
 
 # Print test results
-#for key in testvalues.keys():
-#    print(testvalues[key]-testvalues_0[key])
+for key in testvalues.keys():
+    print(key+': original checksum: '+str(
+        testvalues_0[key]['checksum']) + ', Updated checksum: ' + str(
+            testvalues_0[key]['checksum']), ', diff: ' + testvalues_0[key][
+                'checksum']-testvalues[key]['checksum'])
