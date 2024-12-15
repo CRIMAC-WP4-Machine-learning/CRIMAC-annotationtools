@@ -13,8 +13,8 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 import numpy as np
 import os, struct
-from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
-from echolab2.instruments.util.simrad_raw_file import RawSimradFile
+#from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
+#from echolab2.instruments.util.simrad_raw_file import RawSimradFile
 
 
 

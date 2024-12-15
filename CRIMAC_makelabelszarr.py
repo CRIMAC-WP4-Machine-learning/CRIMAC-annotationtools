@@ -48,7 +48,7 @@ def writelabels(datain, workin, dataout, OUTPUT_NAME,
                                  svzarrfile=sv_file,
                                  parquetfile=pq_filepath,
                                  savefile=label_file,
-                                 pingchunk=40,
+                                 pingchunk=40000,
                                  parselayers=1)
     labelsZarr.run()
 
