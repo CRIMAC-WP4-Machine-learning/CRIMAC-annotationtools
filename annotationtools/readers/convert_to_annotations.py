@@ -1125,14 +1125,29 @@ class work_to_annotation (object):
             if "masks" in dir(work.erased):
                 for i in range(len(work.erased.masks)):
                     if 'depth' in dir(work.erased.masks[i]):
-                        mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
-                        mask_times = [ping_time[int(p-1)] for p in work.erased.masks[i].pingOffset ]
+
+                        # Extract pairs of masks for each ping
+                        _mask_depth = []
+                        for d in  work.erased.masks[i].depth:
+                            data = depthConverter(d)
+                            reshaped = [np.array(data[i:i+2]) for i in
+                                        range(0, len(data), 2)]
+                            _mask_depth.append(reshaped)
+
+                        #mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
+                        # Extract the time for the masks for each ping
+                        mask_times = [ping_time[int(p-1)] for p in
+                                      work.erased.masks[i].pingOffset ]
+
+                        # Loop over time
                         for ii in range(len(mask_times)):
-                            m_depth = mask_depth[ii]
-                            m_depth=m_depth.reshape(-1,2)
+                            m_depth = np.array(_mask_depth[ii])
+                            
+                            # Loop over multiple erased regions for one ping
                             for iii in range(m_depth.shape[0]):
-                                if type(work.erased.masks[i].channelID)==int:
-                                    pingTime.append( ping_timeConverter(mask_times[ii]))
+                                if isinstance(work.erased.masks[i].channelID, int):
+                                    pingTime.append(ping_timeConverter(
+                                        mask_times[ii]))
                                     mask_depth_upper.append(min(m_depth[iii,:]))
                                     mask_depth_lower.append(max(m_depth[iii,:]))
                                     priority.append(1)
@@ -1140,11 +1155,12 @@ class work_to_annotation (object):
                                     proportion.append(1.0)
                                     ChannelID.append(channel_ids[work.erased.masks[i].channelID-1])
                                     ID.append('erased')
-                                    ping_index.append( work.erased.masks[i].pingOffset[ii])
+                                    ping_index.append(work.erased.masks[i].pingOffset[ii])
                                     filenamelist.append(raw_file_name)
                                     upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
                                     lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
                                 else:
+                                    error('Multiple channels!!!!')
                                     for chn in channel_ids[work.erased.masks[i].channelID-1]:
                                         pingTime.append(ping_timeConverter(mask_times[ii]))
                                         mask_depth_upper.append(min(m_depth[iii,:]))
