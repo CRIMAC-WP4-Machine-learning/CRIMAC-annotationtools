@@ -19,16 +19,64 @@ nils = ann_sv.df_
 avv_raw = readers.work_to_annotation(work, raw_fname)
 '''
 
+# Used this to fix the datetime error in excluded regions
+'''
+dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/D2023001/ACOUSTIC/GRIDDED/'
+datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/D2023001/ACOUSTIC/EK80/EK80_RAWDATA'
+workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/D2023001/ACOUSTIC/LSSS/WORK'
+shipID = 'Unknown'
+OUTPUT_NAME = 'D2023001'
+'''
+
+# There were an error in the handling of bubble corrections (missing information)
+# There were also a problem with indexing using ping numbers (substract 1!)
+'''
+dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/S2005114/ACOUSTIC/GRIDDED/'
+datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2005114/ACOUSTIC/EK60/EK60_RAWDATA'
+workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2005114/ACOUSTIC/LSSS/WORK'
+shipID = 'Unknown'
+OUTPUT_NAME = 'S2005114'
+'''
+
+# This one had an error with the exclude region. Fixed by changing how the array is reshaped.
+'''
+dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/S2014119/ACOUSTIC/GRIDDED'
+datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2014119/ACOUSTIC/EK60/EK60_RAWDATA'
+workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2014119/ACOUSTIC/LSSS/WORK/'
+shipID = 'Unknown'
+OUTPUT_NAME = 'S2014119'
+'''
+# This one had also an error with the exclude region. Fixed by changing how the array is reshaped.
+
+'''
+dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/S2017838/ACOUSTIC/GRIDDED'
+datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2017838/ACOUSTIC/EK60/EK60_RAWDATA'
+workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2017838/ACOUSTIC/LSSS/WORK'
+shipID = 'Unknown'
+OUTPUT_NAME = 'S2017838'
+'''
+
+# ?
+'''
+dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/S2014807/ACOUSTIC/GRIDDED'
+datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2014807/ACOUSTIC/EK60/EK60_RAWDATA'
+workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2014807/ACOUSTIC/LSSS/WORK'
+shipID = 'Unknown'
+OUTPUT_NAME = 'S2014807'
+'''
+
 
 datain = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2024002006_PJOHANHJORT_1019/ACOUSTIC/EK80/EK80_RAWDATA/'
 workin = '/mnt/c/DATAscratch/crimac-scratch/test_data/S2024002006_PJOHANHJORT_1019/ACOUSTIC/LSSS/WORK/'
 dataout = '/mnt/c/DATAscratch/crimac-scratch/test_data_out/S2024002006_PJOHANHJORT_1019/ACOUSTIC/GRIDDED/'
+OUTPUT_NAME = 'S2024002006_PJOHANHJORT_1019'
+shipID = '1019'
 
 writelabels(datain = datain,
             workin = workin,
             dataout = dataout,
-            OUTPUT_NAME = 'S2024002006_PJOHANHJORT_1019',
-            shipID = '1019')
+            OUTPUT_NAME = OUTPUT_NAME,
+            shipID = shipID)
 
 '''
 
