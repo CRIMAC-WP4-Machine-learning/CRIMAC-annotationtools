@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-
-
-#Load som packages
 import numpy as np
-import xmltodict,os, struct, sys
-from datetime import datetime
-from echolab2.instruments import EK60, EK80
+import xmltodict
+import os
+import sys
+#from datetime import datetime
+#from echolab2.instruments import EK60, EK80
 import pandas as pd
-from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
-from echolab2.instruments.util.simrad_raw_file import RawSimradFile
+#from echolab2.instruments.util.date_conversion import nt_to_unix, unix_to_datetime
+#from echolab2.instruments.util.simrad_raw_file import RawSimradFile
 import decimal
-import numpy as np
+#import numpy as np
 import xarray as xr
-import pyarrow as pa
+#import pyarrow as pa
 import pyarrow.parquet as pq
 
 class rename_LSSS_vocab_to_ICES_vocab (object):
@@ -193,7 +192,7 @@ class work_reader (object):
 
         #msg for user
         print('Reading:' + work_filename)
-
+        self.info.work_filename = os.path.basename(work_filename)
 
 
 
@@ -579,10 +578,20 @@ class work_reader (object):
 
 
                     #Print the interpretation mask of each school
+                    # There is a work file test case where there
+                    # is no school['pingMask']. i=13, S2014807.
+                    # Hence the ("'pingMask' in schools" logic in
+                    # the if statement below
+                    #if i == 13:
+                    #    import pdb
+                    #    print(i)
+                    #    pdb.set_trace()
+                    
+                    
                     self.school[i].relativePingNumber=list()
                     self.school[i].min_depth = list()
                     self.school[i].max_depth = list()
-                    if parseelement == 1:
+                    if parseelement == 1 & ('pingMask' in schools): # This is the additional logic
                         if type(schools['pingMask'])==list:
                             for ping in schools['pingMask']:
                                 depth = ping['#text'].split()
@@ -643,28 +652,35 @@ class work_reader (object):
         ####################################################################
         # Processing the Buble correction information
         ####################################################################
-        if type(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])!=list:
-            bubble = doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']
-            self.info.bubble = structtype()
-            self.info.bubble.start = float(bubble['@start'])
-            self.info.bubble.numberOfPings = int(bubble['@numberOfPings'])
-            self.info.bubble.CorrectionValue = float(bubble['@bubbleCorrectionValue'])
-        else:
-            self.info.bubble = [None] * len(doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange'])
-            i_buble = 0
-            for bubble in doc['regionInterpretation']['bubbleCorrectionRanges']['timeRange']:
-                self.info.bubble[i_buble] = structtype()
-                self.info.bubble[i_buble].start = float(bubble['@start'])
-                self.info.bubble[i_buble].numberOfPings = int(bubble['@numberOfPings'])
-                self.info.bubble[i_buble].CorrectionValue = float(bubble['@bubbleCorrectionValue'])
-                i_buble+=1
 
+        # Tries if the bubble correction is complete
+        try:
+            bubble = doc['regionInterpretation']['bubbleCorrectionRanges'][
+                'timeRange']
 
+            # Ensure bubble is a list (if it's not already)
+            if not isinstance(bubble, list):
+                bubble = [bubble]
+
+            self.info.bubble = [None] * len(bubble)
+
+            for i_bubble, _bubble in enumerate(bubble):
+                self.info.bubble[i_bubble] = structtype()
+                self.info.bubble[i_bubble].start = float(_bubble['@start'])
+                self.info.bubble[i_bubble].numberOfPings = int(_bubble[
+                    '@numberOfPings'])
+                self.info.bubble[i_bubble].CorrectionValue = float(_bubble[
+                    '@bubbleCorrectionValue'])
+
+        except KeyError as e:
+            print(f"ERROR: Missing key in LSSS work file :: {e}")
+        except TypeError as e:
+            print(f"ERROR: Type mismatch in LSSS work file :: {e}")
+        except Exception as e:
+            print(f"ERROR: An unexpected error occurred while processing the bubble correction: {e}")
 
         with open(work_filename) as fd:
             doc = xmltodict.parse(fd.read())
-
-
 
         ####################################################################
         # Processing the thresholding information
@@ -981,105 +997,51 @@ class work_reader (object):
                     i+=1
 
 
-
-
-
-
-
-
-
 class work_to_annotation (object):
 
-
-    def __init__(self, work, index_file, svzarr=None , correct_time = True):
+    def __init__(self, work, svzarr=None , correct_time = True):
 
         def depthConverter(depth):
-            #Helper function to convert the LSSS depth notation to more general
+            # Helper function to convert the LSSS depth to general notation
             depth = depth.split(' ')
             for idx in range(len(depth)):
-                if idx>0:
-                    depth[idx]=float(depth[idx-1])+float(depth[idx])
+                if idx > 0:
+                    depth[idx] = float(depth[idx-1])+float(depth[idx])
                 else:
-                    depth[idx]=float(depth[idx])
+                    depth[idx] = float(depth[idx])
 
-            return(depth)
+            return depth
     
         def ping_timeConverter(ping_time):
             if isinstance(ping_time, np.float64):
                 ping_time = np.datetime64(unix_to_datetime(ping_time))
-            return(ping_time)
+            return ping_time
 
         # Use round towards zero
         decimal.getcontext().rounding = decimal.ROUND_DOWN
-        raw_file = index_file[0: -3]+"raw"
         ping_time = list()
-        # Get some info from the index file
-        if svzarr is None:
-            print("using raw files for index")
-            #Read the ping times
-            fid = RawSimradFile(index_file, 'r')
-            config = fid.read(1)
-            fid2 = RawSimradFile(raw_file, 'r')
-            config = fid2.read(1)
-
-            channel_ids = list(config['configuration'].keys())#data.channel_ids
-            timestamp = config['timestamp'].timestamp()
-            ping_time_IDX = list()
-
-            run = True
-            while run:
-                try:
-                    idx_datagram = fid.read(1)
-                    p_time = nt_to_unix((int(idx_datagram['low_date']), int(idx_datagram['high_date'])), return_datetime=False)
-                    #the lines below may be an option for some older files
-                    #raw_string=struct.unpack('=4sLLLdddLL', idx_datagram)
-                    #p_time = nt_to_unix((raw_string[1], raw_string[2]),return_datetime=False)
-                    ping_time_IDX.append(float(round(decimal.Decimal(p_time), 3)))
-                except Exception as e:
-                    run = False
-                    exception_type, exception_object, exception_traceback = sys.exc_info()
-                    filename = exception_traceback.tb_frame.f_code.co_filename
-                    line_number = exception_traceback.tb_lineno
-                    #print("ERROR: - Something went wrong when reading the WORK file RAW index"+ str(raw_file))
-                    #print("Exception type: ", exception_type)
-                    #print("File name: ", filename)
-                    #print("Line number: ", line_number)
-                    #print("ERROR: - Something went wrong when reading the WORK file: " + str(raw_file) + " (" + str( e) + ")")
-
-            ping_time = np.array(ping_time_IDX)
-            time_diff = np.datetime64(unix_to_datetime(ping_time[0])) - np.datetime64(unix_to_datetime(float(round(decimal.Decimal(timestamp), 3))))
-            self.raw_work_timediff = time_diff
-        else:
-            # Load the zarr file
-            print(svzarr)
-            dataset = xr.open_zarr(svzarr)
-            filenameraw = os.path.basename(raw_file)
-            #filenameraw = filenameraw[:-3]
-            parquet_file = svzarr.replace("_sv.zarr", "_ping_time-raw_file.parquet")  
-            print(parquet_file)
-            table2 = pq.read_table(parquet_file)
-            df2 = table2.to_pandas()
-            filter_column = "raw_file"
-            filter_value = filenameraw 
-            #df2['raw_file'] = df2['raw_file'].apply(lambda x: x.decode())
-
-            print(filter_column+" : "+  filter_value  )
-            #print(df2) 
-            filtered_df = df2.loc[df2[filter_column] == filter_value] 
-             
-            #print(filtered_df)
-            column_name = "ping_time"
-            filtered_col = filtered_df[column_name]
-            filtered_col_rounded = filtered_col.dt.round("ms")
-            ping_time = filtered_col_rounded.to_numpy()
-            channel_ids = dataset.channel_id.values
-            #print(ping_time)
-            #print(channel_ids)
-
         
+        # Load the zarr file
+        dataset = xr.open_zarr(svzarr)
 
-        raw_file_name = os.path.basename(raw_file )
+        # Load the ping time file
+        parquet_file = svzarr.replace('_sv.zarr',
+                                      '_ping_time-raw_file.parquet')
         
+        table2 = pq.read_table(parquet_file)
+        df2 = table2.to_pandas()
+        
+        # Extract the ping-time for the current work file
+        filter_column = "raw_file"
+        raw_file_name =  work.info.work_filename.split('.')[-2]+'.raw'
+        filtered_df = df2.loc[df2[filter_column] == raw_file_name] 
+        
+        column_name = "ping_time"
+        filtered_col = filtered_df[column_name]
+        filtered_col_rounded = filtered_col.dt.round("ms")
+        ping_time = filtered_col_rounded.to_numpy()
+        channel_ids = dataset.channel_id.values
+
         #For bookkeeping
         mask_depth_upper = []
         mask_depth_lower = []
@@ -1141,9 +1103,14 @@ class work_to_annotation (object):
         if "exclude" in dir(work):
             for i in range(len(work.exclude.start_time)):
                 for chn in channel_ids:
-                    start_time= (work.exclude.start_time[i])
-                    end_time= ping_time[int(np.where(start_time==ping_time)[0])+int(work.exclude.numOfPings[i])-1]
-                    indxp=0;
+                    # The start time in the work object is in Unix time
+                    start_time = np.datetime64(int(
+                        work.exclude.start_time[i] * 1e6), 'us')
+                    end_time = ping_time[int(np.where(
+                        start_time == ping_time)[0])+int(
+                            work.exclude.numOfPings[i])-1]
+                    indxp = 0
+                    
                     for p in ping_time[(ping_time>=start_time) & (ping_time<=end_time)]:
                         pingTime.append( ping_timeConverter(p)) 
                         mask_depth_upper.append(0.0)
@@ -1168,39 +1135,55 @@ class work_to_annotation (object):
             if "masks" in dir(work.erased):
                 for i in range(len(work.erased.masks)):
                     if 'depth' in dir(work.erased.masks[i]):
-                        mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
-                        mask_times = [ping_time[int(p)] for p in work.erased.masks[i].pingOffset ]
+
+                        # Extract pairs of masks for each ping
+                        _mask_depth = []
+                        for d in  work.erased.masks[i].depth:
+                            data = depthConverter(d)
+                            reshaped = [np.array(data[i:i+2]) for i in
+                                        range(0, len(data), 2)]
+                            _mask_depth.append(reshaped)
+
+                        #mask_depth = np.array([np.array(depthConverter(d)) for d in work.erased.masks[i].depth])
+                        # Extract the time for the masks for each ping
+                        mask_times = [ping_time[int(p-1)] for p in
+                                      work.erased.masks[i].pingOffset ]
+
+                        # Loop over time
                         for ii in range(len(mask_times)):
-                            m_depth = mask_depth[ii]
-                            m_depth=m_depth.reshape(-1,2)
+                            m_depth = np.array(_mask_depth[ii])
+                            
+                            # Loop over multiple erased regions for one ping
                             for iii in range(m_depth.shape[0]):
-                                if type(work.erased.masks[i].channelID)==int:
-                                    pingTime.append( ping_timeConverter(mask_times[ii]))
-                                    mask_depth_upper.append(min(m_depth[iii,:]))
-                                    mask_depth_lower.append(max(m_depth[iii,:]))
+                                if isinstance(work.erased.masks[i].channelID, int):
+                                    # Is single instance, convert to list for loop to work
+                                    chid = [channel_ids[work.erased.masks[i].channelID-1]]
+                                else:
+                                    chid = channel_ids[work.erased.masks[i].channelID-1]
+                                    
+                                # Loop over channels if the mask is applied to more than one channel
+                                for chn in channel_ids[work.erased.masks[i].channelID-1]:
+                                    # Append to annotations
+                                    pingTime.append(ping_timeConverter(
+                                        mask_times[ii]))
+                                    mask_depth_upper.append(min(
+                                        m_depth[iii, :]))
+                                    mask_depth_lower.append(max(
+                                        m_depth[iii, :]))
                                     priority.append(1)
                                     acousticCat.append(0)
                                     proportion.append(1.0)
-                                    ChannelID.append(channel_ids[work.erased.masks[i].channelID-1])
+                                    ChannelID.append(chn)
                                     ID.append('erased')
-                                    ping_index.append( work.erased.masks[i].pingOffset[ii])
+                                    ping_index.append(
+                                        work.erased.masks[i].pingOffset[ii])
                                     filenamelist.append(raw_file_name)
-                                    upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
-                                    lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
-                                else:
-                                    for chn in channel_ids[work.erased.masks[i].channelID-1]:
-                                        pingTime.append(ping_timeConverter(mask_times[ii]))
-                                        mask_depth_upper.append(min(m_depth[iii,:]))
-                                        mask_depth_lower.append(max(m_depth[iii,:]))
-                                        priority.append(1)
-                                        acousticCat.append(0)
-                                        proportion.append(1.0)
-                                        ChannelID.append(chn)
-                                        ID.append('erased')
-                                        ping_index.append( work.erased.masks[i].pingOffset[ii])
-                                        filenamelist.append(raw_file_name)
-                                        upperThreshold.append(upperThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
-                                        lowerThreshold.append(lowerThresholdpings[int(work.erased.masks[i].pingOffset[ii]) ])
+                                    upperThreshold.append(
+                                        upperThresholdpings[int(
+                                            work.erased.masks[i].pingOffset[ii]) ])
+                                    lowerThreshold.append(
+                                        lowerThresholdpings[int(
+                                            work.erased.masks[i].pingOffset[ii]) ])
 
 
         ####################################################################
@@ -1211,8 +1194,12 @@ class work_to_annotation (object):
         
         if 'school' in dir(work):
             for i in range(len(work.school)):
-                mask_depth=[list(a) for a in zip(work.school[i].min_depth ,work.school[i].max_depth)]
-                mask_times = [ping_time[int(p)] for p in work.school[i].relativePingNumber]
+                mask_depth=[list(a) for a in zip(work.school[i].min_depth,
+                                                 work.school[i].max_depth)]
+                
+                # NB Ping number start at 1. Subtract one for indexing.
+                mask_times = [ping_time[int(p-1)] for p in work.school[
+                    i].relativePingNumber]
                 
                 if type(work.school[i].interpretations)==list:
                     region_channels=[]
@@ -1306,11 +1293,10 @@ class work_to_annotation (object):
                                 ID.append('School-'+str(work.school[i].objectNumber))
                                 ping_index.append( work.school[i].relativePingNumber[ii])
                                 filenamelist.append(raw_file_name)
-                                upperThreshold.append(upperThresholdpings[ int(work.school[i].relativePingNumber[ii] ) ])
-                                lowerThreshold.append(lowerThresholdpings[ int(work.school[i].relativePingNumber[ii] ) ])
-
-
-
+                                upperThreshold.append(upperThresholdpings[
+                                    int(work.school[i].relativePingNumber[ii]-1)])
+                                lowerThreshold.append(lowerThresholdpings[
+                                    int(work.school[i].relativePingNumber[ii]-1)])
 
 
 
@@ -1324,7 +1310,7 @@ class work_to_annotation (object):
 
                     if "boundaries" in dir(work.layer[i]):
                         mask_depth=[list(a) for a in zip(work.layer[i].boundaries.depths_upper ,work.layer[i].boundaries.depths_lower)]
-                        mask_times = [ping_time[int(p)] for p in work.layer[i].boundaries.ping]
+                        mask_times = [ping_time[int(p-1)] for p in work.layer[i].boundaries.ping]
 
 
                         region_channels = []
@@ -1550,37 +1536,38 @@ class work_to_annotation (object):
         # =============================================================================
 
         if len(pingTime) > 0:
-            if correct_time:
-                correct_time = np.hstack(pingTime) - time_diff
-                print("Correcting time by " + str(time_diff))
-            else:
-                correct_time = np.hstack(pingTime)
-
+            correct_time = np.hstack(pingTime)
+            # Do the layer has upper/lowerThreshold?
+            if len(upperThreshold) == 0:
+                upperThreshold = [np.nan]*len(ping_index)
+            if len(upperThreshold) == 0:
+                lowerThreshold = [np.nan]*len(ping_index)
+            
             df = pd.DataFrame(data={'ping_index': ping_index,
                                     'ping_time': correct_time,
-                                    'mask_depth_upper':mask_depth_upper,
-                                    'mask_depth_lower':mask_depth_lower,
-                                    'priority':priority,
-                                    'acoustic_category':acousticCat,
-                                    'proportion':proportion,
-                                    'object_id':ID,
-                                    'channel_id':ChannelID,
-                                    'upperThreshold':upperThreshold,
-                                    'lowerThreshold':lowerThreshold,
-                                    'raw_file':filenamelist})
+                                    'mask_depth_upper': mask_depth_upper,
+                                    'mask_depth_lower': mask_depth_lower,
+                                    'priority': priority,
+                                    'acoustic_category': acousticCat,
+                                    'proportion': proportion,
+                                    'object_id': ID,
+                                    'channel_id': ChannelID,
+                                    'upperThreshold': upperThreshold,
+                                    'lowerThreshold': lowerThreshold,
+                                    'raw_file': filenamelist})
 
             # Convert if necessary
             self.df_ = df.astype({'ping_index': 'int64',
-                                    'ping_time': 'datetime64[ns]',
-                                    'mask_depth_upper': 'float64',
-                                    'mask_depth_lower': 'float64',
-                                    'priority': 'int64',
-                                    'acoustic_category': str,
-                                    'proportion': 'float64',
-                                    'object_id': str,
-                                    'channel_id': str,
-                                    'upperThreshold': 'float64',
-                                    'lowerThreshold': 'float64',
-                                    'raw_file': str})
+                                  'ping_time': 'datetime64[ns]',
+                                  'mask_depth_upper': 'float64',
+                                  'mask_depth_lower': 'float64',
+                                  'priority': 'int64',
+                                  'acoustic_category': str,
+                                  'proportion': 'float64',
+                                  'object_id': str,
+                                  'channel_id': str,
+                                  'upperThreshold': 'float64',
+                                  'lowerThreshold': 'float64',
+                                  'raw_file': str})
         else:
             self.df_ = None
