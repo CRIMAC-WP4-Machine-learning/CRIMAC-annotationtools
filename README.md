@@ -1,142 +1,100 @@
-# CRIMAC-annotationtools
+# CRIMAC labels
 
-This repository contatin tools to read, convert and write annotatons from the LSSS "work" files. A python representation of the annotations are defined as an annotation structure.
+## Description
 
-The main obejctive is to have test code that defines the annotations data structure in the ICES format, and code to read and write the format. It is our test implementation of the proposed standard, and the discussions at the ICES publication page should guide our development:
-https://github.com/ices-publications/SONAR-netCDF4
+This repository contains tools to read, convert and write annotatons from the LSSS "work" files using Korona.
 
+## Input data
 
-## Python representation of the data
-A python variable structure for annotations (based on dict?) that is a one to one mapping with the ICES Netcdf4 format is needed.
+### LSSS Annotation files
+The LSSS annotations are store in ´work´ files. There is a one-to-one mapping with the raw files. If a work does not exist, and empty file corresponding to the time range grid of the raw file is written.
 
-Based on discussions 06.01.2021 we should probably plan for two different representations. One that is aligned with the data grid, and one that defines the edges of the box that is independent of the data grid. For the first the time vector of the data is needed.
+### Acoustic raw files
+The acoustic raw files corresponding to the work must be avialable since the time variable is not coded in the work files.
 
-### Annotation grid
-1:1 correspondence to the gridded data.
-
-### Ping-range based annotations
-Similar to the ICES standard. Independent of the grid.
-
-## Functions
-
-### converters:
-- annotation_to_grid - (The grid has to be sparse)
-- grid_to_annotation(par=thr) - Turn the pixel based grid into the annotation table. First the data is thresholded, then the neighbouring pixels needs to be connected to a "school", then the connected pixels are written as one object to the annotation table.
-
-### Readers:
-- zarrgrid_to_grid - zarrgrid is undefined.
-- work_to_annotations - LSSSmaskReader - reads annotations from LSSS work files and info from Simrad raw files (such as ping time)
-- ev_to_annotations - reads annotations from Echoviev .ev files
-- icesnc_to_annotations - reads annotations from the ICES annotation format
-
-### Writers:
-- annotations_to_nc - Writes the ICES acoustic annotation format in necdf 
-- annotations_to_work - Writes the ICES acoustic annotation format in necdf 
-- annotations_to_zarr - Writes the ICES acoustic annotation format in zarr (resolution specific?)
-
-## Test data
-The test data are stored at two different places. It is recommended to first clone the annotation data.
-
-### Annotation data
-The annotations are found at
-https://github.com/nilsolav/LSSS-label-versioning
-and can be clones using
-
-`git clone https://github.com/nilsolav/LSSS-label-versioning`
-
-The repository contatins three different branches.
-
-#### The master branch
-The master branch contains the original work files (they also contain nc files for logistical resons; I need to commit them here in order to update the nc2work branch).
-
-`git checkout master`
-
-#### The schoolonly branch
-This branch contain the nc files with schools only, i.e. removing layers, erased regions and excluded pings.
-
-`git checkout schoolsonly`
-
-#### The nc2work branch
-This branch contain the nc files generated from the original work files and work files generated from the nc files.
-
-`git checkout nc2work`
-
-### Raw data
-
-The raw data is located under the OceanInsight azure storage. Contact nilsolav@hi.no to get access. The data is found under 
-
-`/oceaninsightscience/File Shares/hidata/LSSS-label-versioning/`
-
-And the data should be placed in the folder hiearchy from the cloned repository.
-
-## Starting points:
-The code and snippets below are the starting point for the development, in addition to the discussion at the ICES publication page.
-
-### Suggested implementation of the NC format
-This is Gavins suggested annotation format, see the CDL files inside for more details. Part of this process will be to refine this and interact with ICES to achieve that end:
-
-https://github.com/nilsolav/EchosounderNetCDF
-
-It is based on his review on how the different software implement the annotations:
-
-https://docs.google.com/document/d/1F5ub9-ElnGWgoFzOhwrNiAB6fZRhKI8Nw6FskMhzI0g/edit#heading=h.ihw2gdxqw9td
+### Acoustic zarr files
+The converted sv files must be available since the time and vector from these files are used instead of those in the raw files. The reason for this is that the sv conversion corrects any incostinencies is the time vector.
 
 
-### Specific to the U-net implementation
-This code has been written to use the U-net algorithm to make predictions and write the predictions to the NC format.
+## Output data
 
-The fiste step generates a (temporary) pickle file from the U-net algorithm. This file could be a starting point for the definition of the python representation of the annotation format. This needs to be refactored to provide the revised annotations variable structure in python:
+### Standard annotation format
+(in planning) The first step is a standard grid independent variable structure for annotations that is a one to one mapping with the ICES Netcdf4 format. This is our proposal for an ICES standard for annotations. this format will also be used when transporting predictions from ML based methods to LSSS, e.g. through the KD infrastructure.
 
-https://github.com/CRIMAC-WP4-Machine-learning/CRIMAC-classifyers-unet/blob/master/segmentation2nd.py
+The format is ping based, but with range or depth independent of the underlying sample lengths.
+
+We suggest a json string instead in the new version (not set in stone, can be adjusted):
+```
+annotation_coordinates =
+{"1__Layer-354": 
+	{"Status": "OK", 
+	"ObjectType": "Layer",
+	"OjectNumber": 354,
+	"bounding_box": {"start_time": , "stop_time": x, "start_range": x, "stop_range": x},
+	"bounding_box_ind": {"start_ping": x, "stop_ping": x, "start_sample": x, "stop_sample": x},
+	"acoustic_categories": [{"acoustic_category":1 "proportion": 0.9}, {"acoustic_category":2 "proportion": 0.2}],
+}
+```
+
+### Gridded output
+The second step is a pixel grid at the same coordinates as the exported gridded sv data, c.f. [CRIMAC-preprocessing-korona](https://git.imr.no/crimac-wp4-machine-learning/CRIMAC-preprocessing-korona) for details.
+
+Here is an example of the structure when opening the data in xarray:
+```
+<xarray.Dataset> Size: 311MB
+Dimensions:     (category: 4, ping_time: 3885, range: 2500)
+Coordinates:
+  * category    (category) int64 32B 5018 -1 1 12
+  * ping_time   (ping_time) datetime64[ns] 31kB 2019-02-14T19:15:45.851000 .....
+  * range       (range) float64 20kB 0.0 0.2 0.4 0.6 ... 499.2 499.4 499.6 499.8
+Data variables:
+    annotation  (category, ping_time, range) float32 155MB dask.array<chunksize=(1, 3885, 2500), meta=np.ndarray>
+    lowerthr    (ping_time) float32 16kB dask.array<chunksize=(3885,), meta=np.ndarray>
+    object      (ping_time, range) int64 78MB dask.array<chunksize=(3885, 2500), meta=np.ndarray>
+    objecttype  (ping_time, range) int64 78MB dask.array<chunksize=(3885, 2500), meta=np.ndarray>
+    upperthr    (ping_time) float32 16kB dask.array<chunksize=(3885,), meta=np.ndarray>
+Attributes:
+    annotation_coordinates:  [['1__Layer-354', 354, 'Layer-354', 5018, 1.0, '...
+    commit_sha:              1d8aa3651adaa5a25da505d42ed7700d31fee8c1
+    description:             CRIMAC-labels
+    name:                    CRIMAC-labels
+    scriptversion:           v2.0.14
+    time:                    2025-03-09T18:30:31Z
+```
+
+#### Annotation coordinates
+Annotation coordinates is a list of objects from the work file. Each item corresponds to a layer, a school box, an erased region or an ignore region. 
+
+This is an example of the current annotation structure:
+`[['1__Layer-354', 354, 'Layer-354', 5018, 1.0, '2019-02-14 19:43:27.613000', '2019-02-14 19:47:29.015000', 1659, 1900, 14.9890585, 15.0, 19, 61, '{1: 0.0024582148, 12: 0.9975418, -1: -1.0}']]`
+
+And the fields are as follows (not double checked):
+`[['Layer name', Layer number, 'Layer name (short)', Acoustic cetegory, Allocation, 'Start time bounding box', 'Stop time bounding box', StartPing(?), StopPing(?), Start range, Stop range, Start sample, Stop sample, '{acoustic category: proportion, acoustic category: proportion}']]`
 
 
-This function converts the temporary pickle file to nc. This needs to be refactored and use the annotations2nc instead:
+# Build docker image
+The image uses koronatools to convert KD raw files and LSSS' work files into a gridded zarr store output resluting in wit a pixel wise annotation that matches the grid in the sv.zarr from [CRIMAC-preprocessing-korona](https://git.imr.no/crimac-wp4-machine-learning/CRIMAC-preprocessing-korona).
 
-https://github.com/CRIMAC-WP4-Machine-learning/CRIMAC-classifyers-unet/blob/master/createncfile.py
+The output of this script is the Zarr store: `<OUTPUT_NAME>_labels.zarr`.
 
-### Matlab code that reads the LSSS annotations
-This matlab code reads the work files to matlab. This should be the starting point for the work2annotations function:
+A log file called `log_annotation.log` is written during the process.
 
-https://github.com/nilsolav/LSSSreader
+## Build docker image
+You will need to store the LSSS version listed in the Dockerfile, e.g. lsss-3.1.0-alpha-20250320-1110-linux.zip, in the root folder of the repository when building the Docker image. We are storing the different versions at \\ces.hi.no\crimac\LSSS\.
 
+Note that the commit hash is stored in the Docker image. Make sure that all local changes are commited before building the image.
 
-### Code for posting NC files into LSSS
-We can post the NC file to LSSS via LSSS API (NB use the interpolate branch):
-
-https://github.com/nilsolav/EchosounderNetCDF/tree/interpolate
-this part should perhaps be part of the report generation package, but can also stay here. In a sense, it is an alternative to the annotations_to_work function where we post the schools directly and let LSSS generate the work files.
-
-
-### Docker for creating labels zarr data
-
-This script first convert Marec LSSS' work files into a parquet file containing the annotations using the CRIMAC-annotationtools. These data are overlayed on the grid from sv.zarr generated by CRIMAC-preprocessing-korona, and a pixel wise annotation that matches the grid in the sv.zarr from CRIMAC-preprocessing-korona is generated.
-
-In addition you have to set --env shipID=842 --env parselayers=0 . See details in the Example below
-
-The output of this step is the parquet file: `<OUTPUT_NAME>_labels.parquet` and the Zarr  file: `<OUTPUT_NAME>_labels.zarr`  .
-
-
-#### Build docker container
 ```bash
-git clone https://github.com/CRIMAC-WP4-Machine-learning/CRIMAC-annotationtools.git
-cd CRIMAC-annotationtools
 docker build --build-arg=commit_sha=$(git rev-parse HEAD) --build-arg=version_number=$(git describe --tags) --no-cache --tag crimac-annotationtools .
-
 ```
 
-#### Run the container
+# Test data
+We have established a set of paired work and raw files for testing. These files can be downloaded from CRIMAC's [S3 server](https://s3browser.hi.no/files/crimac/test_data/) under `/test_data`.
 
-This docker uses the exact same command and parameters as in step 3 of the old crimac preprocessor
+Latest version of the results from the processing can be found under [S3 server](https://s3browser.hi.no/files/crimac/test_data_out/) under `/test_data_out`. Note that the `<OUTPUT_NAME>_sv.zarr` files must also be avilable when converting the annotations, c.f. commen above.
 
-```bash
-docker run -it \
--v /data/cruise_data/2020/S2020842_PHELMERHANSSEN_1173/ACOUSTIC/EK60/EK60_RAWDATA:/datain \
--v /data/cruise_data/2020/S2020842_PHELMERHANSSEN_1173/ACOUSTIC/LSSS/WORK:/workin \
--v /localscratch/ibrahim-echo/out:/dataout \
---security-opt label=disable \
---env OUTPUT_TYPE=labels.zarr \
---env shipID=842
---env parselayers=0 
---env OUTPUT_NAME=S2020842 \
-crimac-annotationtools
-```
+## Test run the container on the test data
+
+Run the python script ´run_test.py´ to test the procesing on the test data.
+
+Then run the python script ´run_test_metric.py´ to calculate checksums of converter and compare with the previous version.
