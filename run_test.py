@@ -39,7 +39,7 @@ for test_set in workdirs:
             "--env", "shipID=Unknown",
             "--env", "parselayers=1",
             "--env", "OUTPUT_NAME="+survey,
-            "CRIMAC-annotationtools:latest"]
+            "crimac-annotationtools:latest"]
 
         # Run the command
         try:
